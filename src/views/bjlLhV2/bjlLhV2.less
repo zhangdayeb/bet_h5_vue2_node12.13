@@ -27,6 +27,80 @@
 }
 
 /* ================================
+   错误提示弹窗样式
+   ================================ */
+.error-message-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    backdrop-filter: blur(2px);
+    
+    .error-message-panel {
+        background: rgba(20, 20, 20, 0.95);
+        border: 2px solid #ff3b30;
+        border-radius: 15px;
+        padding: 25px 30px;
+        min-width: 280px;
+        max-width: 80vw;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(255, 59, 48, 0.3);
+        backdrop-filter: blur(10px);
+        animation: errorSlideIn 0.3s ease-out;
+        
+        .error-message-text {
+            color: #ff6b6b;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .error-message-btn {
+            background: linear-gradient(135deg, #ff3b30 0%, #d32f2f 100%);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3);
+            
+            &:hover {
+                background: linear-gradient(135deg, #ff5722 0%, #e53935 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(255, 59, 48, 0.4);
+            }
+            
+            &:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 10px rgba(255, 59, 48, 0.2);
+            }
+        }
+    }
+}
+
+@keyframes errorSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ================================
    网络连接状态指示器
    ================================ */
 .network-status {
@@ -167,7 +241,7 @@
    ================================ */
 .bet-box {
     flex: 1;
-    background: linear-gradient(135deg, #1a3c5c 0%, #2d5a87 100%); /* 统一使用蓝色渐变背景 */
+    background: linear-gradient(135deg, #1a3c5c 0%, #2d5a87 100%);
     color: white;
     display: flex;
     flex-direction: column;
@@ -181,11 +255,11 @@
         
         /* 移除特殊行的绿色背景，使用统一背景 */
         &.bet-row-special {
-            background: transparent; /* 使用透明背景，继承父容器背景 */
+            background: transparent;
         }
         
         &.bet-row-basic {
-            background: transparent; /* 使用透明背景，继承父容器背景 */
+            background: transparent;
         }
     }
     
@@ -278,7 +352,26 @@
 
 /* 龙虎特殊样式 */
 .bet-area-longhu {
-    .bet-area();
+    flex: 1;
+    position: relative;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    margin: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(5px);
+    
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    &:active {
+        transform: translateY(0);
+        background: rgba(255, 255, 255, 0.15);
+    }
     
     .bet-content-longhu {
         height: 100%;
@@ -301,7 +394,7 @@
 }
 
 /* ================================
-   筹码显示样式 - 隐藏金额显示
+   筹码显示样式 - 金额显示在筹码上方
    ================================ */
 .bet-chip-container {
     position: absolute;
@@ -319,9 +412,38 @@
         }
     }
     
-    /* 隐藏总金额显示 */
+    /* 将总金额显示在筹码上方 */
     .bet-total-amount {
-        display: none; /* 隐藏金额显示 */
+        position: absolute;
+        top: -30px; /* 改为负值，显示在筹码上方 */
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 215, 0, 0.95);
+        color: #000;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        min-width: 35px;
+        text-align: center;
+        border: 2px solid #daa520;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        white-space: nowrap;
+        z-index: 1000; /* 确保在最上层 */
+        
+        /* 添加小箭头指向筹码 */
+        &::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #daa520;
+        }
     }
 }
 
@@ -386,28 +508,28 @@
     background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
     padding: 20px 15px;
     border-top: 2px solid rgba(255, 255, 255, 0.1);
-    min-height: 140px; /* 增加最小高度 */
+    min-height: 140px;
     
     /* 筹码选择区域 */
     .chip-selection-area {
-        margin-bottom: 25px; /* 增加底部间距 */
+        margin-bottom: 25px;
         
         .chip-list {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 15px; /* 增加筹码间距 */
+            gap: 15px;
             flex-wrap: wrap;
-            padding: 10px 0; /* 添加上下内边距 */
+            padding: 10px 0;
             
             .chip-item {
                 position: relative;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                margin: 5px; /* 添加外边距 */
+                margin: 5px;
                 
                 &.active {
-                    transform: scale(1.15); /* 稍微增加激活状态的缩放 */
+                    transform: scale(1.15);
                     
                     img {
                         filter: drop-shadow(0 0 15px #ffd700);
@@ -421,20 +543,20 @@
                 img {
                     border-radius: 50%;
                     transition: filter 0.3s ease;
-                    border: 2px solid transparent; /* 添加边框占位 */
+                    border: 2px solid transparent;
                 }
                 
                 .chip-value {
                     position: absolute;
-                    bottom: -25px; /* 调整标签位置 */
+                    bottom: -25px;
                     left: 50%;
                     transform: translateX(-50%);
                     color: white;
-                    font-size: 11px; /* 稍微增加字体大小 */
+                    font-size: 11px;
                     font-weight: bold;
                     text-align: center;
                     background: rgba(0, 0, 0, 0.8);
-                    padding: 3px 8px; /* 增加内边距 */
+                    padding: 3px 8px;
                     border-radius: 10px;
                     white-space: nowrap;
                     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -444,7 +566,7 @@
                     position: absolute;
                     top: 0;
                     left: 0;
-                    width: 50px; /* 更新遮罩尺寸 */
+                    width: 50px;
                     height: 50px;
                     background: rgba(0, 0, 0, 0.6);
                     border-radius: 50%;
@@ -471,34 +593,7 @@
     .action-buttons-area {
         display: flex;
         justify-content: center;
-        padding: 10px 0; /* 添加上下内边距 */
-        
-        /* 调整按钮容器内的按钮间距 */
-        :deep(.bet-btns) {
-            gap: 12px; /* 增加按钮间距 */
-            flex-wrap: wrap; /* 允许换行 */
-            justify-content: center;
-            align-items: center;
-            
-            .bet-btn {
-                margin: 4px 6px; /* 添加按钮外边距 */
-                padding: 10px 24px; /* 增加按钮内边距 */
-                height: 40px; /* 增加按钮高度 */
-                font-size: 15px; /* 稍微增加字体大小 */
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                transition: all 0.3s ease;
-                
-                &:hover:not(:disabled) {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-                }
-                
-                &:active:not(:disabled) {
-                    transform: translateY(0);
-                }
-            }
-        }
+        padding: 10px 0;
     }
     
     /* 隐藏游戏信息区域 */
@@ -550,7 +645,7 @@
    调试面板样式（隐藏）
    ================================ */
 .debug-panel {
-    display: none; /* 完全隐藏调试面板 */
+    display: none;
 }
 
 /* ================================
@@ -588,17 +683,6 @@
         
         .action-buttons-area {
             padding: 8px 0;
-            
-            :deep(.bet-btns) {
-                gap: 8px;
-                
-                .bet-btn {
-                    margin: 3px 4px;
-                    padding: 8px 18px;
-                    height: 36px;
-                    font-size: 14px;
-                }
-            }
         }
     }
     
@@ -611,6 +695,21 @@
         right: 10px;
         padding: 6px 12px;
         font-size: 11px;
+    }
+    
+    .error-message-overlay .error-message-panel {
+        padding: 20px 25px;
+        min-width: 260px;
+        
+        .error-message-text {
+            font-size: 15px;
+            margin-bottom: 18px;
+        }
+        
+        .error-message-btn {
+            padding: 8px 20px;
+            font-size: 13px;
+        }
     }
 }
 
@@ -640,19 +739,6 @@
                 }
             }
         }
-        
-        .action-buttons-area {
-            :deep(.bet-btns) {
-                gap: 6px;
-                
-                .bet-btn {
-                    margin: 2px 3px;
-                    padding: 6px 14px;
-                    height: 32px;
-                    font-size: 13px;
-                }
-            }
-        }
     }
     
     .bet-area .bet-content {
@@ -675,6 +761,21 @@
         }
         
         .overlay-subtitle {
+            font-size: 12px;
+        }
+    }
+    
+    .error-message-overlay .error-message-panel {
+        padding: 18px 20px;
+        min-width: 240px;
+        
+        .error-message-text {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .error-message-btn {
+            padding: 7px 18px;
             font-size: 12px;
         }
     }
@@ -715,17 +816,21 @@
         
         .action-buttons-area {
             padding: 15px 0;
-            
-            :deep(.bet-btns) {
-                gap: 15px;
-                
-                .bet-btn {
-                    margin: 5px 8px;
-                    padding: 12px 28px;
-                    height: 44px;
-                    font-size: 16px;
-                }
-            }
+        }
+    }
+    
+    .error-message-overlay .error-message-panel {
+        padding: 30px 35px;
+        min-width: 320px;
+        
+        .error-message-text {
+            font-size: 17px;
+            margin-bottom: 22px;
+        }
+        
+        .error-message-btn {
+            padding: 12px 30px;
+            font-size: 15px;
         }
     }
 }

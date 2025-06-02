@@ -45,7 +45,7 @@
                             </div>
                         </div>
                         
-                        <!-- 筹码显示区域 - 隐藏金额 -->
+                        <!-- 筹码显示区域 - 显示金额 -->
                         <div class="bet-chip-container" v-if="target.betAmount > 0">
                             <div 
                                 class="bet-chip-item" 
@@ -55,8 +55,8 @@
                             >
                                 <img :src="chip.betSrc" width="20" height="20" alt="筹码">
                             </div>
-                            <!-- 隐藏总金额显示 -->
-                            <!-- <div class="bet-total-amount">{{ target.betAmount }}</div> -->
+                            <!-- 显示总金额 -->
+                            <div class="bet-total-amount">{{ target.betAmount }}</div>
                         </div>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
                             </div>
                         </div>
                         
-                        <!-- 筹码显示 - 隐藏金额 -->
+                        <!-- 筹码显示 - 显示金额 -->
                         <div class="bet-chip-container" v-if="target.betAmount > 0">
                             <div 
                                 class="bet-chip-item" 
@@ -87,8 +87,8 @@
                             >
                                 <img :src="chip.betSrc" width="20" height="20" alt="筹码">
                             </div>
-                            <!-- 隐藏金额显示 -->
-                            <!-- <div class="bet-total-amount">{{ target.betAmount }}</div> -->
+                            <!-- 显示总金额 -->
+                            <div class="bet-total-amount">{{ target.betAmount }}</div>
                         </div>
                     </div>
                 </div>				
@@ -112,7 +112,7 @@
                             <div class="bet-label-longhu">{{ target.label }}</div>
                         </div>
                         
-                        <!-- 筹码显示 - 隐藏金额 -->
+                        <!-- 筹码显示 - 显示金额 -->
                         <div class="bet-chip-container" v-if="target.betAmount > 0">
                             <div 
                                 class="bet-chip-item" 
@@ -122,8 +122,8 @@
                             >
                                 <img :src="chip.betSrc" width="20" height="20" alt="筹码">
                             </div>
-                            <!-- 隐藏金额显示 -->
-                            <!-- <div class="bet-total-amount">{{ target.betAmount }}</div> -->
+                            <!-- 显示总金额 -->
+                            <div class="bet-total-amount">{{ target.betAmount }}</div>
                         </div>
                     </div>
                 </div>
@@ -194,6 +194,14 @@
             @closeMsg="closeMsg($event)" 
             :msg="welcomeMsg"
         ></WelcomeMssage>
+        
+        <!-- 错误提示消息弹窗 -->
+        <div v-if="showErrorMsg" class="error-message-overlay" @click="hideErrorMessage">
+            <div class="error-message-panel" @click.stop>
+                <div class="error-message-text">{{ errorMessageText }}</div>
+                <button class="error-message-btn" @click="hideErrorMessage">确定</button>
+            </div>
+        </div>
         
         <!-- 隐藏调试信息面板 -->
         <!-- <div class="debug-panel" v-if="isDevelopment">

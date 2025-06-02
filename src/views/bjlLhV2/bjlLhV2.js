@@ -40,6 +40,8 @@ class SimpleSocketManager {
         this.maxReconnectAttempts = options.maxReconnectAttempts || 10
         this.reconnectTimer = null
         this.reconnectInterval = options.reconnectInterval || 2000
+        this.heartbeatTimer = null
+        this.heartbeatInterval = options.heartbeatInterval || 30000
     }
     
     async connect(initData) {
@@ -54,6 +56,9 @@ class SimpleSocketManager {
                     this.reconnectAttempts = 0
                     this.emit('open', event)
                     
+                    // 启动心跳
+                    this.startHeartbeat()
+                    
                     if (initData) {
                         this.send(initData)
                     }
@@ -67,6 +72,7 @@ class SimpleSocketManager {
                 this.ws.onclose = (event) => {
                     console.log('WebSocket连接关闭:', event.code, event.reason)
                     this.setStatus(CONNECTION_STATUS.DISCONNECTED)
+                    this.stopHeartbeat()
                     this.emit('close', event)
                     
                     // 自动重连
@@ -86,6 +92,28 @@ class SimpleSocketManager {
                 reject(error)
             }
         })
+    }
+    
+    startHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer)
+        }
+        
+        this.heartbeatTimer = setInterval(() => {
+            if (this.status === CONNECTION_STATUS.CONNECTED) {
+                this.send({
+                    use_target: 'heartbeat',
+                    post_position: 'bet'
+                })
+            }
+        }, this.heartbeatInterval)
+    }
+    
+    stopHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer)
+            this.heartbeatTimer = null
+        }
     }
     
     scheduleReconnect() {
@@ -126,6 +154,8 @@ class SimpleSocketManager {
             clearTimeout(this.reconnectTimer)
             this.reconnectTimer = null
         }
+        
+        this.stopHeartbeat()
         
         if (this.ws) {
             this.ws.close()
@@ -226,6 +256,11 @@ export default {
                 show: false,
                 initShow: false
             },
+            
+            // 错误提示消息
+            showErrorMsg: false,
+            errorMessageText: '',
+            errorMessageTimer: null,
             
             // 百家乐下注区域
             betTargetListBjl: [
@@ -370,6 +405,9 @@ export default {
         // 设置下注区域列表
         this.betTargetList = this.gameType == 3 ? this.betTargetListBjl : this.betTargetListLongHu
         
+        // 🔧 初始化时确保所有投注区域都是清空状态
+        this.clearAllBetDisplay()
+        
         // 设置音频路径和欢迎消息
         if(this.gameType == 3) {
             this.audioHandle.audioPath = 'bjl'
@@ -386,13 +424,22 @@ export default {
         // 1. 首先获取用户信息（包括免佣设置）
         this.getUserChipsInfos()
         
-        // 2. 然后获取下注记录
+        // 2. 然后获取下注记录（这里会根据实际情况显示或清空）
         this.getBetCurrentRecord()
         
         // 3. 最后初始化Socket连接
         this.initSocket()
         
         console.log('组件创建完成，初始免佣状态:', this.Freebool)
+    },
+
+    mounted() {
+        console.log('组件挂载完成')
+        // 🔧 挂载后再次确保所有投注区域都是清空状态
+        this.$nextTick(() => {
+            this.clearAllBetDisplay()
+            this.$forceUpdate()
+        })
     },
 
     beforeUnmount() {
@@ -448,7 +495,7 @@ export default {
                 
             } catch (error) {
                 console.error('Socket连接失败:', error)
-                this.showErrorMessage('连接失败，请检查网络连接')
+                this.displayErrorMessage('连接失败，请检查网络连接')
             }
         },
 
@@ -461,16 +508,16 @@ export default {
             
             switch (newStatus) {
                 case 'connected':
-                    this.showSuccessMessage('连接已建立')
+                    console.log('✅ [成功] 连接已建立')
                     break
                 case 'reconnecting':
-                    this.showWarningMessage('正在重新连接...')
+                    console.log('⚠️ [警告] 正在重新连接...')
                     break
                 case 'disconnected':
-                    this.showWarningMessage('连接已断开')
+                    console.log('⚠️ [警告] 连接已断开')
                     break
                 case 'failed':
-                    this.showErrorMessage('连接失败，请刷新页面重试')
+                    console.log('❌ [错误] 连接失败，请刷新页面重试')
                     break
             }
         },
@@ -620,12 +667,27 @@ export default {
         /**
          * 发送错误消息
          */
-        sendErrorMessage(message) {
-            return this.sendMessage({
-                user_id: this.userId + '_',
-                code: msgCode.code.outRange,
-                msg: message
-            })
+        sendErrorMessage(message, sendToServer = false) {
+            // 显示UI提示
+            this.displayErrorMessage(message)
+            
+            // 只有在明确指定需要发送到服务器时才发送
+            if (sendToServer && this.isConnected) {
+                return this.sendMessage({
+                    user_id: this.userId + '_',
+                    code: msgCode.code.outRange,
+                    msg: message
+                })
+            }
+            
+            return false
+        },
+
+        /**
+         * 显示本地错误消息（不发送给服务器）
+         */
+        showLocalError(message) {
+            this.displayErrorMessage(message)
         },
 
         /**
@@ -636,10 +698,10 @@ export default {
             
             try {
                 await this.socketManager.reconnect()
-                this.showSuccessMessage('重连成功')
+                console.log('✅ [成功] 重连成功')
             } catch (error) {
                 console.error('手动重连失败:', error)
-                this.showErrorMessage('重连失败')
+                this.displayErrorMessage('重连失败')
             }
         },
 
@@ -651,21 +713,43 @@ export default {
                 this.socketManager.close()
                 this.socketManager = null
             }
+            
+            // 清理错误消息定时器
+            if (this.errorMessageTimer) {
+                clearTimeout(this.errorMessageTimer)
+                this.errorMessageTimer = null
+            }
         },
 
         /**
-         * 显示消息提示 - 仅控制台输出
+         * 显示错误提示弹窗
          */
-        showSuccessMessage(message) {
-            console.log('✅ [成功]', message)
+        displayErrorMessage(message) {
+            this.errorMessageText = message
+            this.showErrorMsg = true
+            
+            // 清除之前的定时器
+            if (this.errorMessageTimer) {
+                clearTimeout(this.errorMessageTimer)
+            }
+            
+            // 3秒后自动隐藏
+            this.errorMessageTimer = setTimeout(() => {
+                this.hideErrorMessage()
+            }, 3000)
         },
-
-        showWarningMessage(message) {
-            console.log('⚠️ [警告]', message)
-        },
-
-        showErrorMessage(message) {
-            console.log('❌ [错误]', message)
+        
+        /**
+         * 隐藏错误提示弹窗
+         */
+        hideErrorMessage() {
+            this.showErrorMsg = false
+            this.errorMessageText = ''
+            
+            if (this.errorMessageTimer) {
+                clearTimeout(this.errorMessageTimer)
+                this.errorMessageTimer = null
+            }
         },
 
         /**
@@ -722,11 +806,11 @@ export default {
                 
                 this.Freebool = exemptStatus
                 console.log(`💾 免佣设置已保存: 用户${this.userId} 台桌${this.tableId} 游戏${this.gameType} -> ${exemptStatus}`)
-                this.showSuccessMessage(`免佣已${exemptStatus ? '开启' : '关闭'}`)
+                console.log(`✅ [成功] 免佣已${exemptStatus ? '开启' : '关闭'}`)
                 
             } catch (error) {
                 console.error('❌ 本地存储失败:', error)
-                this.showErrorMessage('免佣设置保存失败')
+                this.displayErrorMessage('免佣设置保存失败')
             }
         },
 
@@ -879,6 +963,8 @@ export default {
         setTableInfo(){
             if(this.bureauNumber != this.tableRunInfo.bureau_number) {
                 this.bureauNumber = this.tableRunInfo.bureau_number
+                // 新局开始时清除上一局的投注显示
+                this.clearAllBetDisplay()
                 this.getBetCurrentRecord()
             }
             
@@ -906,17 +992,42 @@ export default {
         },
 
         /**
-         * 其他游戏方法保持不变...
+         * 开牌音效
          */
-        
-        // 简化版的其他方法
         runOpenMusicEffect(bureau_number) {
             if(this.bureauNumber != bureau_number) {
                 this.bureauNumber = bureau_number
                 this.audioHandle.startSoundEffect('OPENCARD.mp3')
+                
+                let time = 0
+                setTimeout((win=0) => {
+                    //主结果 =1 庄赢  =2 闲赢 =3 和牌 
+                    switch(win) {
+                        case 1:
+                            if(this.gameType == 3) {
+                                this.audioHandle.startSoundEffect(`bankerWin.wav`)
+                            }else{
+                                this.audioHandle.startSoundEffect(`dragonWin.wav`)
+                            }
+                        break
+                        case 2:
+                            if(this.gameType == 3) {
+                                this.audioHandle.startSoundEffect(`playerWin.wav`)
+                            }else{
+                                this.audioHandle.startSoundEffect(`tigerWin.wav`)
+                            }
+                        break
+                        case 3:
+                            this.audioHandle.startSoundEffect(`tie.wav`)
+                        break
+                    }
+                }, time, this.resultInfo.result ? this.resultInfo.result.win : 0)
             }
         },
         
+        /**
+         * 设置闪烁效果
+         */
         setFlash(mark) {
             this.betTargetList.forEach(item => {
                 item.flashClass = ''
@@ -940,15 +1051,49 @@ export default {
             
             setTimeout(() => {
                 this.resultInfo = {}
-                this.setFlash('retry')
+                // 🔧 开牌5秒后立即清除所有筹码显示
+                console.log('开牌结果显示结束，清除所有筹码')
+                this.clearAllBetDisplay()
+                // 重新获取下注记录（通常开牌后应该没有记录了）
+                this.getBetCurrentRecord()
                 this.receiveInfoState = false
             }, 5000)
         },
+
+        /**
+         * 清除所有投注区域的筹码显示和金额
+         */
+        clearAllBetDisplay() {
+            console.log('🧹 清除所有投注区域显示')
+            this.betTargetList.forEach(item => {
+                item.betAmount = 0
+                item.showChip = []
+                item.flashClass = ''
+            })
+            // 重置下注状态
+            this.betSendFlag = false
+            this.betSuccess = false
+            // 清空取消数据
+            this.initCancelData()
+            // 清空重复数据
+            this.repeatData = []
+            // 重置总金额
+            this.total_money = 0
+        },
         
+        /**
+         * 取消下注
+         */
         handleCancel() {
+            // 清除所有筹码显示
+            this.clearAllBetDisplay()
+            // 重新获取当前下注记录
             this.getBetCurrentRecord()
         },
         
+        /**
+         * 重复下注
+         */
         repeatBet() {
             if(this.repeatData.length < 1) return
             
@@ -965,6 +1110,9 @@ export default {
             })
         },
         
+        /**
+         * 确认下注
+         */
         betOrder() {
             if(this.betSuccess) return
             
@@ -986,7 +1134,7 @@ export default {
                              Number(this.userInfo.game_records?.deposit_money || 0)
             
             if(realBalance < total) {
-                this.sendErrorMessage(this.$t("publicWords.credit"))
+                this.showLocalError(this.$t("publicWords.credit"))
                 return
             }
             
@@ -1005,60 +1153,97 @@ export default {
                 this.audioHandle.startSoundEffect("betsuccess.mp3")
                 this.getUserChipsInfos('balance')
             }).catch(err => {
-                this.sendErrorMessage(err.message || '下注失败')
+                this.showLocalError(err.message || '下注失败')
                 this.handleCancel()
             })
         },
         
+        /**
+         * 获取当前下注记录
+         */
         getBetCurrentRecord() {
             bjlService.getBetCurrentRecord({
                 id: this.tableId, 
                 'game_type': this.gameType
             }).then(res => {
+                // 先清空所有投注显示
                 this.betTargetList.forEach((el) => {
                     el.betAmount = 0
+                    el.showChip = []
                 })
                 
-                // 不再从下注记录更新免佣状态，保持本地存储的设置
-                if (res.record_list && res.record_list.length > 0) {
-                    console.log('🎯 有下注记录，保持本地免佣设置:', this.Freebool)
+                // 检查是否有有效的下注记录
+                const hasValidRecords = res.record_list && res.record_list.length > 0
+                
+                if (hasValidRecords) {
+                    console.log('🎯 有下注记录，恢复投注显示')
                     this.betSendFlag = true
-                } else {
-                    console.log('🎯 没有下注记录，保持本地免佣设置:', this.Freebool)
-                    this.betSendFlag = false
-                    return
-                }
-                
-                this.betTargetList.forEach((el) => {
-                    res.record_list.forEach(record => {
-                        if(el.id == record.game_peilv_id) {
-                            el.betAmount = Number(record.bet_amt)
-                            el.showChip = this.conversionChip(el.betAmount)
-                        }
+                    
+                    // 恢复投注显示
+                    this.betTargetList.forEach((el) => {
+                        res.record_list.forEach(record => {
+                            if(el.id == record.game_peilv_id) {
+                                el.betAmount = Number(record.bet_amt)
+                                el.showChip = this.conversionChip(el.betAmount)
+                            }
+                        })
                     })
-                })
-                this.repeatData = JSON.parse(JSON.stringify(this.betTargetList))
+                    this.repeatData = JSON.parse(JSON.stringify(this.betTargetList))
+                } else {
+                    console.log('🎯 没有下注记录，保持清空状态')
+                    this.betSendFlag = false
+                    this.repeatData = []
+                    // 确保清空所有状态（初次进入或新局开始）
+                    this.clearAllBetDisplay()
+                }
             }).catch(err => {
                 console.log('获取下注记录失败:', err)
+                // 获取失败时也清空显示
+                this.clearAllBetDisplay()
             })
         },
         
+        /**
+         * 执行下注
+         */
         bet(target) {
+            // 检查是否允许点投 - 这个需要发送到服务器
             if (this.tableRunInfo.is_dianji == 0) {
-                this.sendErrorMessage(this.$t("publicWords.justDianTou"))
+                this.sendErrorMessage(this.$t("publicWords.justDianTou"), true)
                 return
             }
             
-            if(!this.betState) {
-                this.sendErrorMessage(this.$t("publicWords.NonBettingTime"))
+            // 检查点击间隔（防止过快点击）
+            let t_now = new Date().getTime()
+            let t_old = sessionStorage.getItem('last_bet_time_zg') ? sessionStorage.getItem('last_bet_time_zg') : 0
+            let t_wait = 300
+            sessionStorage.setItem('last_bet_time_zg', t_now)
+            if (t_now - t_wait < t_old) {
                 return
             }
             
-            if(!this.currentChip) {
-                this.showErrorMessage('请先选择筹码')
+            // 重置下注成功状态
+            this.betSuccess = false
+            
+            // 检查是否在投注时间内 - 只显示本地提示，不发送给服务器
+            if (!this.betState) {
+                this.showLocalError(this.$t("publicWords.NonBettingTime"))
                 return
             }
             
+            // 检查是否选择了筹码 - 只显示本地提示
+            if (!this.currentChip) {
+                this.showLocalError('请先选择筹码')
+                return
+            }
+            
+            // 检查连接状态 - 只显示本地提示
+            if (!this.isConnected) {
+                this.showLocalError('网络连接中断，请稍候重试')
+                return
+            }
+            
+            // 执行投注逻辑
             this.betTargetList.forEach((item, index) => {
                 if (item.value == target.value) {
                     this.audioHandle.startSoundEffect("betSound.mp3")
@@ -1070,16 +1255,25 @@ export default {
             })
         },
         
+        /**
+         * 初始化取消数据
+         */
         initCancelData() {
             this.betTargetList.forEach((bet, index) => {
                 this.cancelData[index] = {betAmount: 0, id: bet.id}
             })
         },
         
+        /**
+         * 转换筹码显示
+         */
         conversionChip(money) {
             return this.findMaxChip(money)
         },
         
+        /**
+         * 查找最大筹码组合
+         */
         findMaxChip(amount = 0, tempChips = []) {
             if (amount == 0) return tempChips
             
@@ -1103,14 +1297,23 @@ export default {
             return tempChips
         },
         
+        /**
+         * 处理当前筹码选择
+         */
         handleCureentChip(chip) {
             this.currentChip = chip
         },
         
+        /**
+         * 设置显示筹码选择
+         */
         setShowChips(b) {
             this.showChips = b
         },
         
+        /**
+         * 处理筹码选择确认
+         */
         handleConfirm(data) {
             this.choiceChips = data
             this.showChips = false
@@ -1127,8 +1330,21 @@ export default {
             }
         },
         
+        /**
+         * 处理筹码选择错误
+         */
         hanldeSelectChipError(data) {
-            this.sendErrorMessage(data.msg)
+            this.showLocalError(data.msg)
+        },
+
+        /**
+         * 获取游戏对象列表 (兼容原版代码)
+         */
+        getObjects(callback) {
+            if (callback && typeof callback === 'function') {
+                return this.betTargetList.filter(callback)
+            }
+            return this.betTargetList
         }
     }
 }
