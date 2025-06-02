@@ -278,7 +278,7 @@ export default {
     const bet = (target) => {
       // 权限检查（调用 betting 模块）
       const checkResult = betting.canPlaceBet(
-        gameState,
+        gameState.tableRunInfo,
         chips, 
         { isConnected: isConnected.value }
       )

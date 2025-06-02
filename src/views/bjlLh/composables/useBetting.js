@@ -111,7 +111,7 @@ export function useBetting() {
    * @param {Object} connection - 连接状态
    * @returns {Object} 检查结果
    */
-  const canPlaceBet = (gameState, chips, connection) => {
+  const canPlaceBet = (tableRunInfo, chips, connection) => {
     const result = {
       canClick: false,    // 是否可以点击投注区域
       canConfirm: false,  // 是否可以点击确认按钮
@@ -129,7 +129,7 @@ export function useBetting() {
       return result
     }
 
-    if (!gameState.betState) {
+    if (tableRunInfo.end_time <= 0) {
       result.reason = '非下注时间'
       return result
     }
