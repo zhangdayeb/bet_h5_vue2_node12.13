@@ -21,11 +21,6 @@ const routes = [
         component: SanGong
     },
 	{
-	    path: '/bjlLh_xc',
-	    name: 'bjlLhXc',
-	    component: bjlLhXc
-	},
-	{
 	    path: '/bjlLh',
 	    name: 'bjlLh',
 	    component: bjlLh
