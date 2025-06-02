@@ -1,100 +1,178 @@
 // src/views/bjlLh/composables/useBetting.js
-// 下注逻辑管理 - 下注、取消、重复下注、下注记录
+// 精简版下注管理 - 支持追加投注，避免无效提交
 
 import { ref, computed } from 'vue'
 import bjlService from '@/service/bjlService'
 
 /**
- * 下注逻辑管理
+ * 精简版下注管理
  */
 export function useBetting() {
-  // 下注状态
-  const betSendFlag = ref(false)        // 下注发送标志
-  const betSuccess = ref(false)         // 下注成功标志
-  const availableClickBet = ref(true)   // 是否允许点击下注
+  // ================================
+  // 1. 核心状态管理
+  // ================================
   
-  // 下注数据
-  const repeatData = ref([])            // 重复下注数据
-  const cancelData = ref([])            // 取消下注数据
-  const totalMoney = ref(0)             // 下注总金额
+  const betSendFlag = ref(false)           // 是否已发送到服务器
+  const totalAmount = ref(0)               // 当前总投注金额
+  const isSubmitting = ref(false)          // 是否正在提交中
+  const lastSubmittedBetData = ref(null)   // 上次成功提交的数据
+
+  // 防抖控制
+  const lastBetClickTime = ref(0)          // 投注区域点击时间
+  const lastConfirmClickTime = ref(0)      // 确认按钮点击时间
   
-  // 点击防抖控制
-  const lastBetTime = ref(0)
-  const betClickInterval = 300         // 下注点击间隔（毫秒）
+  const BET_CLICK_INTERVAL = 300           // 投注区域间隔300ms
+  const CONFIRM_CLICK_INTERVAL = 1000      // 确认按钮间隔1000ms
 
-  // 计算属性
-  const hasBetData = computed(() => {
-    return repeatData.value.length > 0
-  })
-
-  const hasActiveBets = computed(() => {
-    return betSendFlag.value && betSuccess.value
-  })
-
-  const canPlaceBet = computed(() => {
-    return availableClickBet.value && !betSendFlag.value
-  })
+  // ================================
+  // 2. 计算属性
+  // ================================
 
   /**
-   * 初始化下注数据
-   * @param {Array} betTargetList - 投注区域列表
+   * 获取当前投注数据
    */
-  const initBettingData = (betTargetList) => {
-    if (!betTargetList || !Array.isArray(betTargetList)) {
-      console.warn('⚠️ 投注区域列表无效')
-      return
+  const getCurrentBetData = () => {
+    // 这个函数需要从外部传入betTargetList，暂时返回格式示例
+    return {
+      totalAmount: totalAmount.value,
+      betDetails: [], // 实际使用时需要从betTargetList中提取
+      timestamp: Date.now()
+    }
+  }
+
+  /**
+   * 检查是否有新的投注数据
+   */
+  const hasNewBetData = computed(() => {
+    if (!lastSubmittedBetData.value) {
+      // 从未提交过，有投注就算新
+      return totalAmount.value > 0
     }
 
-    console.log('🎰 初始化下注数据')
-    
-    // 初始化取消数据
-    cancelData.value = betTargetList.map((bet) => ({
-      betAmount: 0,
-      id: bet.id
-    }))
+    const current = getCurrentBetData()
+    const last = lastSubmittedBetData.value
 
-    // 重置其他状态
-    resetBettingState()
-  }
+    // 比较总金额
+    if (current.totalAmount !== last.totalAmount) {
+      return true
+    }
+
+    // 这里需要详细比较betDetails，暂时简化
+    return false
+  })
 
   /**
-   * 重置下注状态
+   * 是否可以确认
    */
-  const resetBettingState = () => {
-    betSendFlag.value = false
-    betSuccess.value = false
-    availableClickBet.value = true
-    totalMoney.value = 0
-    repeatData.value = []
-    
-    console.log('🔄 下注状态已重置')
+  const canConfirm = computed(() => {
+    return !isSubmitting.value && hasNewBetData.value && totalAmount.value > 0
+  })
+
+  // ================================
+  // 3. 防抖检查函数
+  // ================================
+
+  /**
+   * 检查投注点击间隔
+   * @returns {boolean} 是否允许点击
+   */
+  const checkBetClickInterval = () => {
+    const now = Date.now()
+    if (now - lastBetClickTime.value < BET_CLICK_INTERVAL) {
+      console.log('⚠️ 点击过快，请稍候')
+      return false
+    }
+    lastBetClickTime.value = now
+    return true
   }
 
   /**
-   * 执行下注
-   * @param {Object} target - 投注目标
+   * 检查确认点击间隔
+   * @returns {boolean} 是否允许点击
+   */
+  const checkConfirmClickInterval = () => {
+    const now = Date.now()
+    if (now - lastConfirmClickTime.value < CONFIRM_CLICK_INTERVAL) {
+      console.log('⚠️ 点击过快，请稍候')
+      return false
+    }
+    lastConfirmClickTime.value = now
+    return true
+  }
+
+  // ================================
+  // 4. 下注权限检查
+  // ================================
+
+  /**
+   * 检查是否可以下注
+   * @param {Object} gameState - 游戏状态
+   * @param {Object} chips - 筹码状态
+   * @param {Object} connection - 连接状态
+   * @returns {Object} 检查结果
+   */
+  const canPlaceBet = (gameState, chips, connection) => {
+    const result = {
+      canClick: false,    // 是否可以点击投注区域
+      canConfirm: false,  // 是否可以点击确认按钮
+      reason: ''
+    }
+
+    // 基础检查
+    if (!chips.currentChip) {
+      result.reason = '请先选择筹码'
+      return result
+    }
+
+    if (!connection.isConnected) {
+      result.reason = '网络连接中断，请稍候重试'
+      return result
+    }
+
+    if (!gameState.betState) {
+      result.reason = '非下注时间'
+      return result
+    }
+
+    // 可以点击投注区域
+    result.canClick = true
+
+    // 检查确认按钮
+    if (isSubmitting.value) {
+      result.reason = '正在提交中，请稍候'
+      result.canConfirm = false
+    } else if (hasNewBetData.value) {
+      result.canConfirm = true
+      result.reason = '可以确认投注'
+    } else if (totalAmount.value > 0) {
+      result.reason = '投注信息无变化，无需重复提交'
+      result.canConfirm = false
+    } else {
+      result.reason = '请先选择投注区域'
+      result.canConfirm = false
+    }
+
+    return result
+  }
+
+  // ================================
+  // 5. 投注区域点击处理
+  // ================================
+
+  /**
+   * 执行投注区域点击
+   * @param {Object} target - 投注区域
    * @param {Object} currentChip - 当前筹码
    * @param {Array} betTargetList - 投注区域列表
    * @param {Function} conversionChip - 筹码转换函数
-   * @returns {Object|null} 下注结果
+   * @param {Function} playBetSound - 播放下注音效函数
+   * @returns {Object} 下注结果
    */
-  const placeBet = (target, currentChip, betTargetList, conversionChip) => {
-    // 基础验证
-    if (!target || !currentChip || !betTargetList) {
-      console.warn('⚠️ 下注参数不完整')
-      return { success: false, error: '下注参数不完整' }
-    }
-
-    // 检查点击间隔（防抖）
-    const now = Date.now()
-    if (now - lastBetTime.value < betClickInterval) {
+  const executeClickBet = (target, currentChip, betTargetList, conversionChip, playBetSound) => {
+    // 防抖检查
+    if (!checkBetClickInterval()) {
       return { success: false, error: '点击过快，请稍候' }
     }
-    lastBetTime.value = now
-    sessionStorage.setItem('last_bet_time_zg', now.toString())
-
-    // 重置下注成功状态
-    betSuccess.value = false
 
     console.log('🎯 执行下注:', {
       target: target.label,
@@ -104,18 +182,13 @@ export function useBetting() {
 
     // 查找对应的投注区域并更新
     let betPlaced = false
-    betTargetList.forEach((item, index) => {
+    betTargetList.forEach(item => {
       if (item.value === target.value) {
         const betAmount = Number(currentChip.val)
         
         // 更新投注金额
         item.betAmount += betAmount
-        totalMoney.value += betAmount
-        
-        // 更新取消数据
-        if (cancelData.value[index]) {
-          cancelData.value[index].betAmount += betAmount
-        }
+        totalAmount.value += betAmount
         
         // 更新筹码显示
         item.showChip = conversionChip(item.betAmount)
@@ -124,104 +197,61 @@ export function useBetting() {
         console.log('💰 投注更新:', {
           area: item.label,
           amount: betAmount,
-          total: item.betAmount
+          total: item.betAmount,
+          totalAmount: totalAmount.value
         })
       }
     })
 
     if (betPlaced) {
+      // 播放下注音效
+      if (playBetSound) {
+        playBetSound()
+      }
+      
       return { 
         success: true, 
         amount: currentChip.val,
-        totalAmount: totalMoney.value
+        totalAmount: totalAmount.value
       }
     } else {
       return { success: false, error: '投注区域未找到' }
     }
   }
 
-  /**
-   * 重复下注
-   * @param {Array} betTargetList - 投注区域列表
-   * @param {Function} conversionChip - 筹码转换函数
-   * @returns {Object} 下注结果
-   */
-  const repeatBet = (betTargetList, conversionChip) => {
-    if (repeatData.value.length < 1) {
-      console.warn('⚠️ 没有可重复的下注记录')
-      return { success: false, error: '没有可重复的下注记录' }
-    }
-
-    console.log('🔄 重复下注:', repeatData.value.length, '个记录')
-
-    betSuccess.value = false
-    let totalBetAmount = 0
-
-    // 应用重复下注数据
-    betTargetList.forEach((betItem, index) => {
-      for (const repeat of repeatData.value) {
-        if (betItem.id === repeat.id && repeat.betAmount > 0) {
-          betItem.betAmount += repeat.betAmount
-          totalBetAmount += repeat.betAmount
-          
-          if (cancelData.value[index]) {
-            cancelData.value[index].betAmount += repeat.betAmount
-          }
-        }
-      }
-      
-      // 更新筹码显示
-      if (betItem.betAmount > 0) {
-        betItem.showChip = conversionChip(betItem.betAmount)
-      }
-    })
-
-    totalMoney.value += totalBetAmount
-
-    console.log('✅ 重复下注完成，总金额:', totalBetAmount)
-    
-    return { 
-      success: true, 
-      amount: totalBetAmount,
-      betsCount: repeatData.value.filter(r => r.betAmount > 0).length
-    }
-  }
+  // ================================
+  // 6. 确认按钮处理
+  // ================================
 
   /**
-   * 取消下注
-   * @param {Array} betTargetList - 投注区域列表
-   */
-  const cancelBet = (betTargetList) => {
-    console.log('❌ 取消下注')
-
-    // 清除所有投注显示
-    betTargetList.forEach(item => {
-      item.betAmount = 0
-      item.showChip = []
-      item.flashClass = ''
-    })
-
-    // 重置状态
-    resetBettingState()
-    
-    // 重新初始化取消数据
-    initBettingData(betTargetList)
-
-    return { success: true, message: '已取消所有下注' }
-  }
-
-  /**
-   * 确认下注（提交到服务器）
+   * 确认投注（智能判断是否需要调用API）
    * @param {Array} betTargetList - 投注区域列表
    * @param {Object} gameParams - 游戏参数
-   * @param {Object} userInfo - 用户信息
    * @param {boolean} isExempt - 是否免佣
-   * @returns {Promise<Object>} 下注结果
+   * @param {Function} playConfirmSound - 播放确认音效函数
+   * @param {Function} playTipSound - 播放提示音效函数
+   * @returns {Promise<Object>} 确认结果
    */
-  const confirmBet = async (betTargetList, gameParams, userInfo, isExempt = false) => {
-    if (betSuccess.value) {
-      console.warn('⚠️ 重复提交下注')
-      return { success: false, error: '请勿重复提交' }
+  const confirmBet = async (betTargetList, gameParams, isExempt = false, playConfirmSound, playTipSound) => {
+    // 防抖检查
+    if (!checkConfirmClickInterval()) {
+      return { success: false, error: '点击过快，请稍候' }
+    }
+
+    // 检查是否有新投注数据
+    if (!hasNewBetData.value) {
+      console.log('📢 投注信息无变化，无需重复提交')
+      
+      // 播放提示音效
+      if (playTipSound) {
+        playTipSound()
+      }
+      
+      return { 
+        success: false, 
+        error: '投注信息无变化，无需重复提交',
+        noApiCall: true  // 标识这不是错误，而是无需调用API
+      }
     }
 
     // 准备下注数据
@@ -242,16 +272,6 @@ export function useBetting() {
       return { success: false, error: '请先选择投注区域' }
     }
 
-    // 检查余额
-    const realBalance = calculateUserBalance(userInfo)
-    if (realBalance < totalBetAmount) {
-      console.warn('💰 余额不足:', {
-        required: totalBetAmount,
-        available: realBalance
-      })
-      return { success: false, error: '余额不足' }
-    }
-
     // 准备请求数据
     const requestData = {
       bet: confirmData,
@@ -260,7 +280,7 @@ export function useBetting() {
       is_exempt: isExempt ? 1 : 0
     }
 
-    console.log('📤 提交下注:', {
+    console.log('📤 提交下注到服务器:', {
       betsCount: confirmData.length,
       totalAmount: totalBetAmount,
       isExempt,
@@ -268,24 +288,24 @@ export function useBetting() {
     })
 
     try {
+      // 设置提交中状态
+      isSubmitting.value = true
+
       // 发送下注请求
       const response = await bjlService.betOrder(requestData)
       
       // 下注成功
-      betSuccess.value = true
       betSendFlag.value = true
       
-      // 保存重复下注数据
-      repeatData.value = betTargetList.map(item => ({
-        id: item.id,
-        betAmount: item.betAmount,
-        label: item.label
-      }))
+      // 更新上次提交的数据
+      updateSubmittedData(betTargetList)
       
-      // 重新初始化取消数据
-      initBettingData(betTargetList)
-
       console.log('✅ 下注成功:', response)
+      
+      // 播放确认音效
+      if (playConfirmSound) {
+        playConfirmSound()
+      }
       
       return { 
         success: true, 
@@ -297,140 +317,195 @@ export function useBetting() {
     } catch (error) {
       console.error('❌ 下注失败:', error)
       
-      // 下注失败时清理状态
-      resetBettingState()
-      
       return { 
         success: false, 
         error: error.message || '下注失败，请重试'
       }
+    } finally {
+      // 清除提交中状态
+      isSubmitting.value = false
     }
   }
 
+  // ================================
+  // 7. 取消按钮处理
+  // ================================
+
   /**
-   * 获取当前下注记录
-   * @param {Object} gameParams - 游戏参数
+   * 取消投注（智能判断）
    * @param {Array} betTargetList - 投注区域列表
-   * @param {Function} conversionChip - 筹码转换函数
-   * @returns {Promise<Object>} 获取结果
+   * @param {Function} playCancelSound - 播放取消音效函数
+   * @param {Function} playErrorSound - 播放错误音效函数
+   * @returns {Object} 取消结果
    */
-  const getCurrentBetRecord = async (gameParams, betTargetList, conversionChip) => {
-    const requestData = {
-      id: gameParams.tableId,
-      game_type: gameParams.gameType
-    }
-
-    console.log('📥 获取当前下注记录:', requestData)
-
-    try {
-      const response = await bjlService.getBetCurrentRecord(requestData)
+  const cancelBet = (betTargetList, playCancelSound, playErrorSound) => {
+    if (betSendFlag.value) {
+      // 已发送到后台，无法取消
+      console.log('⚠️ 下注已提交到服务器，无法取消')
       
-      // 先清空所有投注显示
-      betTargetList.forEach(item => {
-        item.betAmount = 0
-        item.showChip = []
-      })
-
-      // 检查是否有有效的下注记录
-      const hasValidRecords = response.record_list && response.record_list.length > 0
-
-      if (hasValidRecords) {
-        console.log('🎯 恢复下注记录:', response.record_list.length, '条')
-        
-        betSendFlag.value = true
-
-        // 恢复投注显示
-        betTargetList.forEach(item => {
-          response.record_list.forEach(record => {
-            if (item.id === record.game_peilv_id) {
-              item.betAmount = Number(record.bet_amt)
-              item.showChip = conversionChip(item.betAmount)
-            }
-          })
-        })
-
-        // 保存为重复下注数据
-        repeatData.value = betTargetList.map(item => ({
-          id: item.id,
-          betAmount: item.betAmount,
-          label: item.label
-        }))
-
-        return { 
-          success: true, 
-          hasRecords: true,
-          recordsCount: response.record_list.length
-        }
-      } else {
-        console.log('🎯 没有下注记录')
-        
-        betSendFlag.value = false
-        repeatData.value = []
-        resetBettingState()
-
-        return { 
-          success: true, 
-          hasRecords: false 
-        }
+      // 播放错误音效
+      if (playErrorSound) {
+        playErrorSound()
       }
-
-    } catch (error) {
-      console.error('❌ 获取下注记录失败:', error)
       
-      // 获取失败时清空显示
-      resetBettingState()
-      betTargetList.forEach(item => {
-        item.betAmount = 0
-        item.showChip = []
-      })
-
       return { 
         success: false, 
-        error: error.message || '获取下注记录失败'
+        error: '下注已提交，无法取消' 
+      }
+    } else {
+      // 未发送，可以取消
+      console.log('❌ 取消投注')
+
+      // 清除所有投注显示
+      betTargetList.forEach(item => {
+        item.betAmount = 0
+        item.showChip = []
+        item.flashClass = ''
+      })
+
+      // 重置状态
+      resetBettingState()
+      
+      // 播放取消音效
+      if (playCancelSound) {
+        playCancelSound()
+      }
+
+      return { 
+        success: true, 
+        message: '已取消所有下注' 
       }
     }
   }
 
-  /**
-   * 计算用户余额
-   * @param {Object} userInfo - 用户信息
-   * @returns {number} 真实余额
-   */
-  const calculateUserBalance = (userInfo) => {
-    if (!userInfo) return 0
-
-    const balance = Number(userInfo.money_balance) || 0
-    const betMoney = Number(userInfo.game_records?.bet_money) || 0
-    const depositMoney = Number(userInfo.game_records?.deposit_money) || 0
-
-    return balance + betMoney + depositMoney
-  }
+  // ================================
+  // 8. 数据管理函数
+  // ================================
 
   /**
-   * 设置下注可用状态
-   * @param {boolean} available - 是否可用
-   */
-  const setAvailableClickBet = (available) => {
-    availableClickBet.value = available
-    console.log('🎯 下注点击状态:', available ? '可用' : '不可用')
-  }
-
-  /**
-   * 清除所有下注显示
+   * 更新上次提交的数据
    * @param {Array} betTargetList - 投注区域列表
    */
-  const clearAllBetDisplay = (betTargetList) => {
-    console.log('🧹 清除所有下注显示')
+  const updateSubmittedData = (betTargetList) => {
+    const betDetails = []
     
+    betTargetList.forEach(item => {
+      if (item.betAmount > 0) {
+        betDetails.push({
+          areaId: item.id,
+          amount: item.betAmount,
+          label: item.label
+        })
+      }
+    })
+
+    lastSubmittedBetData.value = {
+      totalAmount: totalAmount.value,
+      betDetails,
+      timestamp: Date.now()
+    }
+
+    console.log('💾 更新提交记录:', lastSubmittedBetData.value)
+  }
+
+  /**
+   * 获取详细的当前投注数据
+   * @param {Array} betTargetList - 投注区域列表
+   * @returns {Object} 当前投注数据
+   */
+  const getDetailedCurrentBetData = (betTargetList) => {
+    const betDetails = []
+    
+    betTargetList.forEach(item => {
+      if (item.betAmount > 0) {
+        betDetails.push({
+          areaId: item.id,
+          amount: item.betAmount,
+          label: item.label
+        })
+      }
+    })
+
+    return {
+      totalAmount: totalAmount.value,
+      betDetails,
+      timestamp: Date.now()
+    }
+  }
+
+  // ================================
+  // 9. 自动清理系统
+  // ================================
+
+  /**
+   * 开牌结果时清理显示
+   * @param {Array} betTargetList - 投注区域列表
+   */
+  const clearOnGameResult = (betTargetList) => {
+    console.log('🎯 开牌结果到达，清空投注显示')
+    
+    // 清空投注显示，但保持提交状态
     betTargetList.forEach(item => {
       item.betAmount = 0
       item.showChip = []
       item.flashClass = ''
     })
 
-    resetBettingState()
-    initBettingData(betTargetList)
+    // 重置总金额，但保持其他状态
+    totalAmount.value = 0
   }
+
+  /**
+   * 新局重置
+   * @param {Array} betTargetList - 投注区域列表
+   */
+  const resetForNewRound = (betTargetList) => {
+    console.log('🆕 新局开始，重置下注状态')
+    
+    // 清空所有投注显示
+    betTargetList.forEach(item => {
+      item.betAmount = 0
+      item.showChip = []
+      item.flashClass = ''
+    })
+
+    // 重置所有状态
+    resetBettingState()
+    
+    // 清空提交历史
+    lastSubmittedBetData.value = null
+  }
+
+  /**
+   * 重置下注状态
+   */
+  const resetBettingState = () => {
+    betSendFlag.value = false
+    totalAmount.value = 0
+    isSubmitting.value = false
+    lastBetClickTime.value = 0
+    lastConfirmClickTime.value = 0
+    
+    console.log('🔄 下注状态已重置')
+  }
+
+  // ================================
+  // 10. 初始化系统
+  // ================================
+
+  /**
+   * 初始化下注系统
+   */
+  const initBetting = () => {
+    console.log('🎰 初始化下注系统')
+    
+    resetBettingState()
+    lastSubmittedBetData.value = null
+  }
+
+  // ================================
+  // 11. 调试和工具函数
+  // ================================
 
   /**
    * 获取下注状态摘要
@@ -439,14 +514,11 @@ export function useBetting() {
   const getBettingStateSummary = () => {
     return {
       betSendFlag: betSendFlag.value,
-      betSuccess: betSuccess.value,
-      availableClickBet: availableClickBet.value,
-      totalMoney: totalMoney.value,
-      hasBetData: hasBetData.value,
-      hasActiveBets: hasActiveBets.value,
-      canPlaceBet: canPlaceBet.value,
-      repeatDataCount: repeatData.value.length,
-      cancelDataCount: cancelData.value.length
+      totalAmount: totalAmount.value,
+      isSubmitting: isSubmitting.value,
+      canConfirm: canConfirm.value,
+      hasNewBetData: hasNewBetData.value,
+      lastSubmittedData: lastSubmittedBetData.value
     }
   }
 
@@ -454,44 +526,50 @@ export function useBetting() {
    * 调试下注信息
    */
   const debugBettingInfo = () => {
-    console.group('=== 下注管理调试信息 ===')
+    console.group('=== 精简版下注管理调试信息 ===')
     console.log('下注状态:', getBettingStateSummary())
-    console.log('重复数据:', repeatData.value)
-    console.log('取消数据:', cancelData.value)
+    console.log('防抖时间:', {
+      lastBetClick: lastBetClickTime.value,
+      lastConfirmClick: lastConfirmClickTime.value
+    })
     console.groupEnd()
   }
 
   return {
-    // 响应式数据
+    // 状态数据
     betSendFlag,
-    betSuccess,
-    availableClickBet,
-    totalMoney,
-    repeatData,
-    cancelData,
+    totalAmount,
+    isSubmitting,
     
     // 计算属性
-    hasBetData,
-    hasActiveBets,
+    canConfirm,
+    hasNewBetData,
+    
+    // 权限检查
     canPlaceBet,
     
+    // 核心操作
+    executeClickBet,
+    confirmBet,
+    cancelBet,
+    
+    // 防抖检查
+    checkBetClickInterval,
+    checkConfirmClickInterval,
+    
+    // 自动清理
+    clearOnGameResult,
+    resetForNewRound,
+    
+    // 数据管理
+    updateSubmittedData,
+    getDetailedCurrentBetData,
+    
     // 初始化
-    initBettingData,
+    initBetting,
     resetBettingState,
     
-    // 下注操作
-    placeBet,
-    repeatBet,
-    cancelBet,
-    confirmBet,
-    getCurrentBetRecord,
-    
-    // 状态管理
-    setAvailableClickBet,
-    clearAllBetDisplay,
-    
     // 工具方法
-    calculateUserBalance,
     getBettingStateSummary,
     debugBettingInfo
   }
