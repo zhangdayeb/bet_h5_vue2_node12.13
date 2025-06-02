@@ -1,5 +1,5 @@
 // src/views/bjlLh/bjlLh.js
-// 新版本 - 调度员版本：只做协调和接口，具体业务由各模块完成
+// 新版本 - 调度员版本：只做协调和接口，具体业务由各模块完成 - 修复音频传递
 
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
@@ -269,11 +269,11 @@ export default {
     }
 
     // ================================
-    // 功能3: Vue组件接口层（薄包装）
+    // 功能3: Vue组件接口层（薄包装）- 修复音频传递
     // ================================
 
     /**
-     * 投注区域点击 - 薄包装
+     * 投注区域点击 - 修复：传递具体音频函数
      */
     const bet = (target) => {
       // 权限检查（调用 betting 模块）
@@ -284,13 +284,13 @@ export default {
       )
       
       if (checkResult.canClick) {
-        // 执行下注（调用 betting 模块，包含音效）
+        // 执行下注（调用 betting 模块，传递具体音频函数）
         const result = betting.executeClickBet(
           target,
           chips.currentChip.value,
           gameConfig.betTargetList.value,
           chips.conversionChip,
-          audio  // 传递整个 audio 对象
+          audio.playBetSound  // 修复：传递具体的音频函数
         )
         
         if (!result.success) {
@@ -302,11 +302,11 @@ export default {
     }
 
     /**
-     * 确认按钮 - 薄包装
+     * 确认按钮 - 修复：传递具体音频函数
      */
     const betOrder = async () => {
       try {
-        // 智能确认逻辑（调用 betting 模块，包含音效）
+        // 智能确认逻辑（调用 betting 模块，传递具体音频函数）
         const result = await betting.confirmBet(
           gameConfig.betTargetList.value,
           {
@@ -314,7 +314,8 @@ export default {
             tableId: gameConfig.tableId.value
           },
           exempt.Freebool.value,
-          audio  // 传递整个 audio 对象
+          audio.playBetSuccessSound,  // 修复：传递确认成功音效函数
+          audio.playTipSound          // 修复：传递提示音效函数
         )
         
         if (!result.success && !result.noApiCall) {
@@ -327,13 +328,14 @@ export default {
     }
 
     /**
-     * 取消按钮 - 薄包装
+     * 取消按钮 - 修复：传递具体音频函数
      */
     const handleCancel = () => {
-      // 智能取消逻辑（调用 betting 模块，包含音效）
+      // 智能取消逻辑（调用 betting 模块，传递具体音频函数）
       const result = betting.cancelBet(
         gameConfig.betTargetList.value,
-        audio  // 传递整个 audio 对象
+        audio.playCancelSound,  // 修复：传递取消音效函数
+        audio.playErrorSound    // 修复：传递错误音效函数
       )
       
       if (!result.success) {

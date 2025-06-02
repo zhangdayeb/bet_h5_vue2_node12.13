@@ -1,5 +1,5 @@
 // src/views/bjlLh/composables/useBetting.js
-// 精简版下注管理 - 支持追加投注，避免无效提交
+// 精简版下注管理 - 支持追加投注，避免无效提交 - 修复音频调用
 
 import { ref, computed } from 'vue'
 import bjlService from '@/service/bjlService'
@@ -156,7 +156,7 @@ export function useBetting() {
   }
 
   // ================================
-  // 5. 投注区域点击处理
+  // 5. 投注区域点击处理 - 修复音频调用
   // ================================
 
   /**
@@ -204,9 +204,14 @@ export function useBetting() {
     })
 
     if (betPlaced) {
-      // 播放下注音效
-      if (playBetSound) {
-        playBetSound()
+      // 播放下注音效 - 修复：直接调用传入的音效函数
+      if (playBetSound && typeof playBetSound === 'function') {
+        try {
+          playBetSound()
+          console.log('🔊 播放下注音效')
+        } catch (error) {
+          console.warn('⚠️ 下注音效播放失败:', error)
+        }
       }
       
       return { 
@@ -220,7 +225,7 @@ export function useBetting() {
   }
 
   // ================================
-  // 6. 确认按钮处理
+  // 6. 确认按钮处理 - 修复音频调用
   // ================================
 
   /**
@@ -242,9 +247,14 @@ export function useBetting() {
     if (!hasNewBetData.value) {
       console.log('📢 投注信息无变化，无需重复提交')
       
-      // 播放提示音效
-      if (playTipSound) {
-        playTipSound()
+      // 播放提示音效 - 修复：直接调用传入的音效函数
+      if (playTipSound && typeof playTipSound === 'function') {
+        try {
+          playTipSound()
+          console.log('🔊 播放提示音效')
+        } catch (error) {
+          console.warn('⚠️ 提示音效播放失败:', error)
+        }
       }
       
       return { 
@@ -302,9 +312,14 @@ export function useBetting() {
       
       console.log('✅ 下注成功:', response)
       
-      // 播放确认音效
-      if (playConfirmSound) {
-        playConfirmSound()
+      // 播放确认音效 - 修复：直接调用传入的音效函数
+      if (playConfirmSound && typeof playConfirmSound === 'function') {
+        try {
+          playConfirmSound()
+          console.log('🔊 播放确认音效')
+        } catch (error) {
+          console.warn('⚠️ 确认音效播放失败:', error)
+        }
       }
       
       return { 
@@ -328,7 +343,7 @@ export function useBetting() {
   }
 
   // ================================
-  // 7. 取消按钮处理
+  // 7. 取消按钮处理 - 修复音频调用
   // ================================
 
   /**
@@ -343,9 +358,14 @@ export function useBetting() {
       // 已发送到后台，无法取消
       console.log('⚠️ 下注已提交到服务器，无法取消')
       
-      // 播放错误音效
-      if (playErrorSound) {
-        playErrorSound()
+      // 播放错误音效 - 修复：直接调用传入的音效函数
+      if (playErrorSound && typeof playErrorSound === 'function') {
+        try {
+          playErrorSound()
+          console.log('🔊 播放错误音效')
+        } catch (error) {
+          console.warn('⚠️ 错误音效播放失败:', error)
+        }
       }
       
       return { 
@@ -366,9 +386,14 @@ export function useBetting() {
       // 重置状态
       resetBettingState()
       
-      // 播放取消音效
-      if (playCancelSound) {
-        playCancelSound()
+      // 播放取消音效 - 修复：直接调用传入的音效函数
+      if (playCancelSound && typeof playCancelSound === 'function') {
+        try {
+          playCancelSound()
+          console.log('🔊 播放取消音效')
+        } catch (error) {
+          console.warn('⚠️ 取消音效播放失败:', error)
+        }
       }
 
       return { 

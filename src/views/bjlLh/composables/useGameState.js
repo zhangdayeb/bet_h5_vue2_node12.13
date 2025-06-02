@@ -187,96 +187,169 @@ export function useGameState() {
   // 开牌结果处理 Game Result Processing
   // ================================
   
-  /**
-   * 处理开牌结果
-   * Handle game result processing
-   * @param {Object} gameResult - 开牌结果对象 Game result object
-   * @param {Array} betTargetList - 投注目标列表 Bet target list
-   * @param {string|null} gameType - 游戏类型 Game type
-   * @returns {Object|null} 处理结果 Processing result
-   */
-  const handleGameResult = (gameResult, betTargetList = [], gameType = null) => {
-    // 验证开牌结果数据完整性
-    // Validate game result data integrity
-    if (!gameResult || !gameResult.data || !gameResult.data.result_info) {
-      console.warn('⚠️ 开牌结果数据无效 Invalid game result data')
-      return null
-    }
+/**
+ * 处理开牌结果 - 增加筹码清理功能
+ * Handle game result processing - Added chip clearing functionality
+ * @param {Object} gameResult - 开牌结果对象 Game result object
+ * @param {Array} betTargetList - 投注目标列表 Bet target list
+ * @param {string|null} gameType - 游戏类型 Game type
+ * @returns {Object|null} 处理结果 Processing result
+ */
+const handleGameResult = (gameResult, betTargetList = [], gameType = null) => {
+  // 验证开牌结果数据完整性
+  // Validate game result data integrity
+  if (!gameResult || !gameResult.data || !gameResult.data.result_info) {
+    console.warn('⚠️ 开牌结果数据无效 Invalid game result data')
+    return null
+  }
 
-    const resultData = gameResult.data.result_info
-    const flashIds = resultData.pai_flash || []
-    const resultBureauNumber = gameResult.data.bureau_number
+  const resultData = gameResult.data.result_info
+  const flashIds = resultData.pai_flash || []
+  const resultBureauNumber = gameResult.data.bureau_number
 
-    console.log('🎯 收到开牌结果 Received game result:', {
-      resultBureauNumber,
-      currentBureauNumber: bureauNumber.value,
-      flashIds,
-      currentGameFlashed: currentGameFlashed.value
-    })
+  console.log('🎯 收到开牌结果 Received game result:', {
+    resultBureauNumber,
+    currentBureauNumber: bureauNumber.value,
+    flashIds,
+    currentGameFlashed: currentGameFlashed.value
+  })
 
-    // 检查是否是新的一局
-    // Check if this is a new round
-    const isNewRound = bureauNumber.value !== resultBureauNumber
+  // 检查是否是新的一局
+  // Check if this is a new round
+  const isNewRound = bureauNumber.value !== resultBureauNumber
+  
+  if (isNewRound) {
+    console.log('🆕 新的一局开始 New round started:', resultBureauNumber, '上一局 Previous round:', bureauNumber.value)
+    bureauNumber.value = resultBureauNumber
     
-    if (isNewRound) {
-      console.log('🆕 新的一局开始 New round started:', resultBureauNumber, '上一局 Previous round:', bureauNumber.value)
-      bureauNumber.value = resultBureauNumber
-      
-      // 新局重置闪烁状态 - 允许新局再次闪烁
-      // Reset flashing state for new round - allow new round to flash again
-      console.log('🔄 重置闪烁状态，新局可以闪烁 Reset flashing state, new round can flash')
-      currentGameFlashed.value = false
-      
-      // 清理上一局的闪烁效果和定时器
-      // Clean up previous round's flashing effects and timers
-      if (flashTimer.value) {
-        clearTimeout(flashTimer.value)
-        flashTimer.value = null
-        console.log('🧹 清理上一局的闪烁定时器 Clean up previous round flash timer')
-      }
-      flashingAreas.value = []
+    // 新局重置闪烁状态 - 允许新局再次闪烁
+    // Reset flashing state for new round - allow new round to flash again
+    console.log('🔄 重置闪烁状态，新局可以闪烁 Reset flashing state, new round can flash')
+    currentGameFlashed.value = false
+    
+    // 清理上一局的闪烁效果和定时器
+    // Clean up previous round's flashing effects and timers
+    if (flashTimer.value) {
+      clearTimeout(flashTimer.value)
+      flashTimer.value = null
+      console.log('🧹 清理上一局的闪烁定时器 Clean up previous round flash timer')
     }
+    flashingAreas.value = []
+  }
 
-    // 检查是否是当前局的结果
-    // Check if this is the result of the current round
-    if (resultBureauNumber !== bureauNumber.value) {
-      // 换局了，闪烁条件重置
-      // Round changed, reset flashing conditions
-      currentGameFlashed.value = false
-    }
+  // 检查是否是当前局的结果
+  // Check if this is the result of the current round
+  if (resultBureauNumber !== bureauNumber.value) {
+    // 换局了，闪烁条件重置
+    // Round changed, reset flashing conditions
+    currentGameFlashed.value = false
+  }
 
-    // 检查当前局是否已经闪烁过
-    // Check if current round has already flashed
-    if (currentGameFlashed.value) {
-      console.log('⚠️ 当前局已经处理过开牌结果，跳过重复处理 Current round already processed game result, skipping duplicate')
-      return {
-        type: 'game_result',
-        processed: false,
-        reason: 'already_processed_this_round'
-      }
-    }
-
-    // 播放开牌音效
-    // Play card opening sound effects
-    if (audioManager.value) {
-      console.log('🎵 播放开牌音效 Playing card opening sound')
-      safePlayAudio(audioManager.value.playOpenCardSequence, resultData, gameType, resultBureauNumber)
-    }
-
-    // 设置获胜区域闪烁效果
-    // Set flashing effect for winning areas
-    if (flashIds.length > 0) {
-      setFlashEffect(flashIds, betTargetList)
-    }
-
+  // 检查当前局是否已经闪烁过
+  // Check if current round has already flashed
+  if (currentGameFlashed.value) {
+    console.log('⚠️ 当前局已经处理过开牌结果，跳过重复处理 Current round already processed game result, skipping duplicate')
     return {
       type: 'game_result',
-      resultInfo: resultData,
-      bureauNumber: resultBureauNumber,
-      flashIds,
-      processed: true
+      processed: false,
+      reason: 'already_processed_this_round'
     }
   }
+
+  // ================================
+  // 新增：清理投注区域筹码显示
+  // NEW: Clear betting area chip displays
+  // ================================
+  
+  console.log('🧹 开牌结果到达，开始清理投注区域筹码显示 Game result arrived, clearing betting area chip displays')
+  
+  if (betTargetList && Array.isArray(betTargetList) && betTargetList.length > 0) {
+    let clearedAreasCount = 0
+    let totalClearedAmount = 0
+    
+    betTargetList.forEach((item, index) => {
+      if (item && (item.betAmount > 0 || item.showChip.length > 0)) {
+        // 记录清理前的状态（用于调试）
+        const beforeState = {
+          label: item.label,
+          betAmount: item.betAmount,
+          chipCount: item.showChip.length
+        }
+        
+        // 累计统计
+        totalClearedAmount += item.betAmount || 0
+        clearedAreasCount++
+        
+        // 清理投注金额
+        item.betAmount = 0
+        
+        // 清理筹码显示数组
+        item.showChip = []
+        
+        // 注意：不清理 flashClass，因为闪烁效果需要保留
+        // Note: Don't clear flashClass as flashing effects should be preserved
+        
+        console.log(`🧹 清理投注区域 [${index}] Cleared betting area:`, {
+          before: beforeState,
+          after: {
+            label: item.label,
+            betAmount: item.betAmount,
+            chipCount: item.showChip.length
+          }
+        })
+      }
+    })
+    
+    console.log(`✅ 筹码清理完成 Chip clearing completed:`, {
+      clearedAreas: clearedAreasCount,
+      totalClearedAmount: totalClearedAmount,
+      totalAreas: betTargetList.length
+    })
+  } else {
+    console.warn('⚠️ 投注区域列表无效，跳过筹码清理 Invalid bet target list, skipping chip clearing')
+  }
+
+  // ================================
+  // 播放开牌音效
+  // Play card opening sound effects
+  // ================================
+  
+  if (audioManager.value) {
+    console.log('🎵 播放开牌音效 Playing card opening sound')
+    safePlayAudio(audioManager.value.playOpenCardSequence, resultData, gameType, resultBureauNumber)
+  }
+
+  // ================================
+  // 设置获胜区域闪烁效果
+  // Set flashing effect for winning areas
+  // ================================
+  
+  if (flashIds.length > 0) {
+    setFlashEffect(flashIds, betTargetList)
+  }
+
+  // ================================
+  // 返回处理结果
+  // Return processing result
+  // ================================
+  
+  return {
+    type: 'game_result',
+    resultInfo: resultData,
+    bureauNumber: resultBureauNumber,
+    flashIds,
+    processed: true,
+    // 新增：返回清理统计信息
+    // NEW: Return clearing statistics
+    clearingStats: {
+      clearedAreas: betTargetList ? betTargetList.filter(item => 
+        item && (item.betAmount === 0 && item.showChip.length === 0)
+      ).length : 0,
+      totalAreas: betTargetList ? betTargetList.length : 0,
+      clearingTime: Date.now()
+    }
+  }
+}
 
   // ================================
   // 消息处理主入口 Main Message Processing Entry Point
