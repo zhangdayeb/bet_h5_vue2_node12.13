@@ -301,31 +301,50 @@ export default {
       }
     }
 
-    /**
-     * 确认按钮 - 修复：传递具体音频函数
-     */
-    const betOrder = async () => {
-      try {
-        // 智能确认逻辑（调用 betting 模块，传递具体音频函数）
-        const result = await betting.confirmBet(
-          gameConfig.betTargetList.value,
-          {
-            gameType: gameConfig.gameType.value,
-            tableId: gameConfig.tableId.value
-          },
-          exempt.Freebool.value,
-          audio.playBetSuccessSound,  // 修复：传递确认成功音效函数
-          audio.playTipSound          // 修复：传递提示音效函数
-        )
-        
-        if (!result.success && !result.noApiCall) {
-          errorHandler.showLocalError(result.error)
-        }
-      } catch (error) {
-        console.error('❌ 确认下注失败:', error)
-        errorHandler.handleApiError(error, '下注失败，请重试')
-      }
+/**
+ * 确认按钮 - 修复：传递具体音频函数 + 增加成功提示
+ */
+const betOrder = async () => {
+  try {
+    // 智能确认逻辑（调用 betting 模块，传递具体音频函数）
+    const result = await betting.confirmBet(
+      gameConfig.betTargetList.value,
+      {
+        gameType: gameConfig.gameType.value,
+        tableId: gameConfig.tableId.value
+      },
+      exempt.Freebool.value,
+      audio.playBetSuccessSound,  // 修复：传递确认成功音效函数
+      audio.playTipSound          // 修复：传递提示音效函数
+    )
+    
+    // 处理投注结果
+    if (result.success) {
+      // ================================
+      // 新增：投注成功提示
+      // ================================
+      const successMessage = `投注成功！共${result.betsCount}注，总金额 ${result.amount}`
+      console.log('✅ 投注成功:', {
+        betsCount: result.betsCount,
+        amount: result.amount,
+        message: successMessage
+      })
+      
+      // 显示成功提示消息
+      errorHandler.showSuccessMessage(successMessage, 2000)
+      
+    } else if (!result.noApiCall) {
+      // 投注失败（非重复提交的情况）
+      errorHandler.showLocalError(result.error)
     }
+    // 注意：result.noApiCall = true 的情况（重复提交）不显示错误，
+    // 因为 betting 模块内部已经播放了提示音效
+    
+  } catch (error) {
+    console.error('❌ 确认下注失败:', error)
+    errorHandler.handleApiError(error, '下注失败，请重试')
+  }
+}
 
     /**
      * 取消按钮 - 修复：传递具体音频函数
