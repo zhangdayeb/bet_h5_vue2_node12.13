@@ -1,0 +1,50 @@
+module.exports = {
+    publicWords: {
+		justDianTou:'just tel bet',
+        NonBettingTime: 'ไม่เดิมพันเวลา',
+		credit: 'ขาดสมดุล',
+    },
+	chips: {
+		selectChips: 'กรุณาเลือกห้าชิปปกติ',
+		useChips: 'เลือกใช้ชิป',
+		ok: 'ยืนยัน',
+	},
+	bjlLhXc: {
+		Plyer: 'Plyer',
+		Tie: 'Tie',
+		Banker: 'Banker',
+		PPair: 'PPair',
+		BPair: 'BPair',
+	},
+    bjlAndLh: {
+		mianyong:'免佣',
+		playerPair: 'บ้านว่างคำ',
+		zhuangWins: 'ตรังจุดชนะ',
+		repeatBet: 'ทำซ้ำ',
+		ok: 'ยืนยัน',
+		cancel: 'ยกเลิก',
+		free: 'ไม่ต้อง',
+		noFree: 'ยกเว้นแ',
+        welcomeBjl: 'ยินดีต้อนรับสู่เกมบาคาร่า',
+        welcomeLh: 'ยินดีต้อนรับสู่เกมมังกรและเสือ',
+	},
+	cattle: {
+		player1: 'เวลา1',
+		player2: 'เวลา2',
+		player3: 'เวลา3',
+		superCalf: 'วัวพิเศษ',
+		double: 'สองเท่า',
+		ordinary: 'เท่ากัน',
+        welcome: 'ยินดีต้อนรับสู่เกมวัว',
+	},
+	sanGong: {
+		player1: 'เวลา1',
+		player2: 'เวลา2',
+		player3: 'เวลา3',
+		superCalf: 'ซอร์สามดยุค',
+		double: 'สองเท่า',
+		than7: 'เจ็ดจุดขึ้นสองเท่า',
+		ordinary: 'เท่ากัน',
+        welcome: 'ยินดีต้อนรับสู่เกม',
+	}
+}

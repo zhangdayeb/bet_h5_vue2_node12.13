@@ -1,0 +1,50 @@
+module.exports = {
+    publicWords: {
+		justDianTou:'仅电投',
+        NonBettingTime: '非下注时间',
+		credit: '余额不足',
+    },
+	chips: {
+		selectChips: '请选择5个常用筹码',
+		useChips: '选择使用筹码',
+		ok: '确定',
+	},
+	bjlLhXc: {
+		Plyer: '闲',
+		Tie: '和',
+		Banker: '庄',
+		PPair: '闲对',
+		BPair: '庄对',
+	},
+    bjlAndLh: {
+		mianyong:'免佣',
+		playerPair: '闲对',
+		zhuangWins: '庄6点赢',
+		repeatBet: '重复',
+		ok: '确定',
+		cancel: '取消',
+		free: '免佣开',
+		noFree: '免佣关',
+        welcomeBjl: '欢迎光临百家乐游戏',
+        welcomeLh: '欢迎光临龙虎斗游戏',
+	},
+	cattle: {
+		player1: '闲1',
+		player2: '闲2',
+		player3: '闲3',
+		superCalf: '超牛',
+		double: '翻倍',
+		ordinary: '平倍',
+        welcome: '欢迎光临牛牛游戏',
+	},
+	sanGong: {
+		player1: '闲1',
+		player2: '闲2',
+		player3: '闲3',
+		superCalf: '超级三公',
+		double: '翻倍',
+		than7: '7点起翻倍',
+		ordinary: '平倍',
+        welcome: '欢迎光临三公游戏',
+	}
+}

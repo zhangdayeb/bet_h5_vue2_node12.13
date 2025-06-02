@@ -1,0 +1,50 @@
+module.exports = {
+    publicWords: {
+		justDianTou:'just tel bet',
+        NonBettingTime: '非注釈時間',
+		credit: '残高不足',
+    },
+	chips: {
+		selectChips: '共通チップを5つお選びください',
+		useChips: 'チップの使用を選択',
+		ok: 'できる',
+	},
+	bjlLhXc: {
+		Plyer: 'Plyer',
+		Tie: 'Tie',
+		Banker: 'Banker',
+		PPair: 'PPair',
+		BPair: 'BPair',
+	},
+    bjlAndLh: {
+		mianyong:'免佣',
+		playerPair: '閑対',
+		zhuangWins: '荘6勝',
+		repeatBet: '繰り返し',
+		ok: 'できる',
+		cancel: '消去',
+		free: '免除す',
+		noFree: '免除で',
+        welcomeBjl: '百家楽ゲームへようこそ',
+        welcomeLh: 'ドラゴンボールゲームへようこそ',
+	},
+	cattle: {
+		player1: '暇1',
+		player2: '暇2',
+		player3: '暇3',
+		superCalf: 'スーパー',
+		double: '倍に',
+		ordinary: '平倍',
+        welcome: '牛牛ゲームへようこそ',
+	},
+	sanGong: {
+		player1: '暇1',
+		player2: '暇2',
+		player3: '暇3',
+		superCalf: 'スーパー',
+		double: '倍に',
+		than7: '7から2倍',
+		ordinary: '平倍',
+        welcome: '三公ゲームへようこそ',
+	}
+}

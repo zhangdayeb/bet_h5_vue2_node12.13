@@ -1,0 +1,50 @@
+module.exports = {
+    publicWords: {
+		justDianTou:'just tel bet',
+        NonBettingTime: 'Non betting time',
+		credit: 'Credit is running low',
+    },
+	chips: {
+		selectChips: 'Please select 5 common chips',
+		useChips: 'Choose to use chips',
+		ok: 'OK',
+	},
+	bjlLhXc: {
+		Plyer: 'Plyer',
+		Tie: 'Tie',
+		Banker: 'Banker',
+		PPair: 'PPair',
+		BPair: 'BPair',
+	},
+    bjlAndLh: {
+		mianyong:'免佣',
+		playerPair: 'PlayerPair',
+		zhuangWins: '6 wins',
+		repeatBet: 'Rebet',
+		ok: 'Confirm',
+		cancel: 'Cancel',
+		free: `&nbsp;Free`,
+		noFree: `&nbsp;Charge`,
+        welcomeBjl: 'Welcome to baccarat game',
+        welcomeLh: 'Welcome to dragon tiger game',
+	},
+	cattle: {
+		player1: 'P1',
+		player2: 'P2',
+		player3: 'P3',
+		superCalf: 'Super',
+		double: 'Double',
+		ordinary: 'Ordin',
+        welcome: 'Welcome to Bull game ',
+	},
+	sanGong: {
+		player1: 'P1',
+		player2: 'P2',
+		player3: 'P3',
+		superCalf: 'Super G',
+		double: 'Doub',
+		than7: 'More than 7',
+		ordinary: 'Ordin',
+        welcome: 'Welcome to Three Man game ',
+	}
+}
