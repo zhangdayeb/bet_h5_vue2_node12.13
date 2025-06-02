@@ -70,25 +70,7 @@ export function useAudio() {
   }
 
   /**
-   * 播放欢迎音频和背景音乐
-   */
-  const playWelcomeAudio = () => {
-    if (!audioInitialized.value) {
-      console.warn('⚠️ 音频系统未初始化')
-      return
-    }
-
-    console.log('🎵 播放欢迎音频')
-    
-    // 播放欢迎音效
-    playSoundEffect('welcome.wav')
-    
-    // 启动背景音乐
-    startBackgroundMusic()
-  }
-
-  /**
-   * 播放音效
+   * 通用音效播放函数
    * @param {string} soundName - 音效文件名
    */
   const playSoundEffect = (soundName) => {
@@ -107,41 +89,9 @@ export function useAudio() {
     return true
   }
 
-  /**
-   * 播放音效（别名方法，保持兼容性）
-   * @param {string} soundName - 音效文件名
-   */
-  const playSound = playSoundEffect
-
-  /**
-   * 启动背景音乐
-   */
-  const startBackgroundMusic = () => {
-    if (!audioInitialized.value) {
-      console.warn('⚠️ 音频系统未初始化，无法播放背景音乐')
-      return false
-    }
-
-    console.log('🎵 启动背景音乐')
-    audioHandle.value.startSoundBackground()
-    return true
-  }
-
-  /**
-   * 停止背景音乐
-   */
-  const stopBackgroundMusic = () => {
-    console.log('🎵 停止背景音乐')
-    audioHandle.value.closeSoundBackground()
-  }
-
-  /**
-   * 停止音效
-   */
-  const stopSoundEffect = () => {
-    console.log('🔊 停止音效')
-    audioHandle.value.closeSoundEffect()
-  }
+  // ================================
+  // 预定义音效函数 - 常用音效
+  // ================================
 
   /**
    * 播放下注音效
@@ -155,6 +105,27 @@ export function useAudio() {
    */
   const playBetSuccessSound = () => {
     return playSoundEffect('betsuccess.mp3')
+  }
+
+  /**
+   * 播放取消音效
+   */
+  const playCancelSound = () => {
+    return playSoundEffect('cancel.wav')
+  }
+
+  /**
+   * 播放提示音效（无变化重复点击）
+   */
+  const playTipSound = () => {
+    return playSoundEffect('tip.wav')
+  }
+
+  /**
+   * 播放错误音效
+   */
+  const playErrorSound = () => {
+    return playSoundEffect('error.wav')
   }
 
   /**
@@ -177,6 +148,17 @@ export function useAudio() {
   const playOpenCardSound = () => {
     return playSoundEffect('OPENCARD.mp3')
   }
+
+  /**
+   * 播放欢迎音效
+   */
+  const playWelcomeSound = () => {
+    return playSoundEffect('welcome.wav')
+  }
+
+  // ================================
+  // 游戏结果音效 - 需要参数的音效
+  // ================================
 
   /**
    * 播放结果音效
@@ -211,7 +193,7 @@ export function useAudio() {
   }
 
   /**
-   * 播放开牌流程音效
+   * 播放开牌流程音效序列
    * @param {Object} resultInfo - 开牌结果信息
    * @param {number} gameType - 游戏类型
    * @param {string} bureauNumber - 局号
@@ -229,6 +211,62 @@ export function useAudio() {
       }
     }, 1000) // 1秒后播放结果音效
   }
+
+  // ================================
+  // 背景音乐控制
+  // ================================
+
+  /**
+   * 启动背景音乐
+   */
+  const startBackgroundMusic = () => {
+    if (!audioInitialized.value) {
+      console.warn('⚠️ 音频系统未初始化，无法播放背景音乐')
+      return false
+    }
+
+    console.log('🎵 启动背景音乐')
+    audioHandle.value.startSoundBackground()
+    return true
+  }
+
+  /**
+   * 停止背景音乐
+   */
+  const stopBackgroundMusic = () => {
+    console.log('🎵 停止背景音乐')
+    audioHandle.value.closeSoundBackground()
+  }
+
+  /**
+   * 停止音效
+   */
+  const stopSoundEffect = () => {
+    console.log('🔊 停止音效')
+    audioHandle.value.closeSoundEffect()
+  }
+
+  /**
+   * 播放欢迎音频和背景音乐
+   */
+  const playWelcomeAudio = () => {
+    if (!audioInitialized.value) {
+      console.warn('⚠️ 音频系统未初始化')
+      return
+    }
+
+    console.log('🎵 播放欢迎音频')
+    
+    // 播放欢迎音效
+    playWelcomeSound()
+    
+    // 启动背景音乐
+    startBackgroundMusic()
+  }
+
+  // ================================
+  // 音频设置控制
+  // ================================
 
   /**
    * 设置背景音乐状态
@@ -249,6 +287,35 @@ export function useAudio() {
     audioHandle.value.setMusicEffectSate(state)
     console.log('🔊 设置音效状态:', state)
   }
+
+  /**
+   * 切换背景音乐状态
+   */
+  const toggleBackgroundMusic = () => {
+    const newState = backgroundMusicState.value === 'on' ? 'off' : 'on'
+    setBackgroundMusicState(newState)
+    
+    if (newState === 'on') {
+      startBackgroundMusic()
+    } else {
+      stopBackgroundMusic()
+    }
+    
+    return newState
+  }
+
+  /**
+   * 切换音效状态
+   */
+  const toggleSoundEffect = () => {
+    const newState = musicEffectState.value === 'on' ? 'off' : 'on'
+    setMusicEffectState(newState)
+    return newState
+  }
+
+  // ================================
+  // 音频查询和工具函数
+  // ================================
 
   /**
    * 获取当前音频状态
@@ -289,44 +356,24 @@ export function useAudio() {
   }
 
   /**
-   * 切换背景音乐状态
+   * 获取支持的音频格式
    */
-  const toggleBackgroundMusic = () => {
-    const newState = backgroundMusicState.value === 'on' ? 'off' : 'on'
-    setBackgroundMusicState(newState)
-    
-    if (newState === 'on') {
-      startBackgroundMusic()
-    } else {
-      stopBackgroundMusic()
+  const getSupportedFormats = () => {
+    const audio = new Audio()
+    const formats = {
+      mp3: !!audio.canPlayType('audio/mpeg'),
+      wav: !!audio.canPlayType('audio/wav'),
+      ogg: !!audio.canPlayType('audio/ogg'),
+      aac: !!audio.canPlayType('audio/aac')
     }
     
-    return newState
+    console.log('🎵 支持的音频格式:', formats)
+    return formats
   }
 
-  /**
-   * 切换音效状态
-   */
-  const toggleSoundEffect = () => {
-    const newState = musicEffectState.value === 'on' ? 'off' : 'on'
-    setMusicEffectState(newState)
-    return newState
-  }
-
-  /**
-   * 预加载音频文件（可选功能）
-   * @param {Array} soundList - 音频文件列表
-   */
-  const preloadSounds = (soundList = []) => {
-    if (!isAudioAvailable()) {
-      console.warn('⚠️ 音频系统不可用，跳过预加载')
-      return
-    }
-
-    console.log('🎵 预加载音频文件:', soundList)
-    // 这里可以实现音频预加载逻辑
-    // 由于原有的 AudioHandle 不支持预加载，这里只是占位
-  }
+  // ================================
+  // 组合音效序列 - 复杂场景
+  // ================================
 
   /**
    * 播放特定的游戏音效序列
@@ -357,41 +404,18 @@ export function useAudio() {
         playOpenCardSequence(params.resultInfo, params.gameType, params.bureauNumber)
         break
         
+      case 'welcome_sequence':
+        playWelcomeAudio()
+        break
+        
       default:
         console.warn('⚠️ 未知的音效序列:', sequence)
     }
   }
 
-  /**
-   * 音量控制（扩展功能）
-   * @param {number} volume - 音量（0-1）
-   */
-  const setVolume = (volume) => {
-    if (volume < 0 || volume > 1) {
-      console.warn('⚠️ 音量值无效:', volume)
-      return false
-    }
-    
-    // 这里可以扩展音量控制功能
-    console.log('🔊 设置音量:', volume)
-    return true
-  }
-
-  /**
-   * 获取支持的音频格式
-   */
-  const getSupportedFormats = () => {
-    const audio = new Audio()
-    const formats = {
-      mp3: !!audio.canPlayType('audio/mpeg'),
-      wav: !!audio.canPlayType('audio/wav'),
-      ogg: !!audio.canPlayType('audio/ogg'),
-      aac: !!audio.canPlayType('audio/aac')
-    }
-    
-    console.log('🎵 支持的音频格式:', formats)
-    return formats
-  }
+  // ================================
+  // 调试和维护功能
+  // ================================
 
   /**
    * 调试音频信息
@@ -429,6 +453,29 @@ export function useAudio() {
     resetAudio()
   }
 
+  /**
+   * 测试所有音效（开发环境用）
+   */
+  const testAllSounds = () => {
+    console.log('🎵 测试所有音效')
+    const sounds = [
+      'playBetSound',
+      'playBetSuccessSound', 
+      'playCancelSound',
+      'playTipSound',
+      'playErrorSound',
+      'playOpenCardSound',
+      'playWelcomeSound'
+    ]
+    
+    sounds.forEach((soundName, index) => {
+      setTimeout(() => {
+        console.log('🔊 测试:', soundName)
+        eval(soundName + '()')
+      }, index * 1000)
+    })
+  }
+
   return {
     // 响应式数据
     audioHandle,
@@ -444,40 +491,50 @@ export function useAudio() {
     setBackgroundMusicState,
     setMusicEffectState,
     
-    // 音频播放
-    playWelcomeAudio,
+    // 通用音效播放
     playSoundEffect,
-    playSound,
-    startBackgroundMusic,
-    stopBackgroundMusic,
-    stopSoundEffect,
     
-    // 游戏音效
+    // 预定义音效 - 常用音效
     playBetSound,
     playBetSuccessSound,
+    playCancelSound,
+    playTipSound,
+    playErrorSound,
     playStopBetSound,
     playStartBetSound,
     playOpenCardSound,
+    playWelcomeSound,
+    
+    // 游戏结果音效
     playResultSound,
     playOpenCardSequence,
-    playGameSequence,
     
-    // 音频控制
-    muteAll,
-    unmuteAll,
+    // 背景音乐控制
+    startBackgroundMusic,
+    stopBackgroundMusic,
+    stopSoundEffect,
+    playWelcomeAudio,
+    
+    // 音频设置控制
     toggleBackgroundMusic,
     toggleSoundEffect,
-    setVolume,
     
     // 查询方法
     getAudioStatus,
     isAudioAvailable,
     getSupportedFormats,
     
+    // 音频控制
+    muteAll,
+    unmuteAll,
+    
+    // 组合音效
+    playGameSequence,
+    
     // 工具方法
-    preloadSounds,
     resetAudio,
     cleanup,
-    debugAudioInfo
+    debugAudioInfo,
+    testAllSounds
   }
 }
