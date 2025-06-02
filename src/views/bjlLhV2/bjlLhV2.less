@@ -1,242 +1,731 @@
+/* ================================
+   主容器样式
+   ================================ */
+.bet {
+    background-image: url('~@/assets/imgs/bg1.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    
+    /* 整体游戏包装器 */
+    .bet-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        transition: filter 0.3s ease;
+        
+        /* 连接中断时添加模糊效果 */
+        &.connection-overlay {
+            filter: blur(2px);
+            pointer-events: none;
+        }
+    }
+}
 
-.bet-btn{
+/* ================================
+   网络连接状态指示器
+   ================================ */
+.network-status {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 20px;
+    padding: 8px 15px;
+    color: white;
+    font-size: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    .status-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .status-icon {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        
+        &.connecting {
+            background: #ff9500;
+            animation: pulse 1.5s infinite;
+        }
+        
+        &.reconnecting {
+            background: #ffcc00;
+            animation: pulse 1s infinite;
+        }
+        
+        &.disconnected {
+            background: #ff3b30;
+        }
+        
+        &.failed {
+            background: #ff3b30;
+            animation: blink 0.5s infinite;
+        }
+    }
+    
+    .status-text {
+        font-weight: 500;
+    }
+    
+    .reconnect-btn {
+        background: #007aff;
+        border: none;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        
+        &:hover {
+            background: #0056cc;
+        }
+        
+        &:active {
+            background: #004494;
+        }
+    }
+}
+
+/* 连接状态动画 */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* ================================
+   连接中断遮罩层
+   ================================ */
+.connection-overlay-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 30px;
+    border-radius: 15px;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    .overlay-icon {
+        width: 50px;
+        height: 50px;
+        margin: 0 auto 15px;
+        border-radius: 50%;
+        
+        &.connecting {
+            background: #ff9500;
+            animation: pulse 1.5s infinite;
+        }
+        
+        &.reconnecting {
+            background: #ffcc00;
+            animation: pulse 1s infinite;
+        }
+        
+        &.disconnected {
+            background: #ff3b30;
+        }
+        
+        &.failed {
+            background: #ff3b30;
+        }
+    }
+    
+    .overlay-text {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+    
+    .overlay-subtitle {
+        font-size: 14px;
+        opacity: 0.7;
+    }
+}
+
+/* ================================
+   投注区域样式 - 统一背景色
+   ================================ */
+.bet-box {
+    flex: 1;
+    background: linear-gradient(135deg, #1a3c5c 0%, #2d5a87 100%); /* 统一使用蓝色渐变背景 */
+    color: white;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    
+    /* 百家乐投注行 - 统一背景 */
+    .bet-row {
+        flex: 1;
+        display: flex;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        
+        /* 移除特殊行的绿色背景，使用统一背景 */
+        &.bet-row-special {
+            background: transparent; /* 使用透明背景，继承父容器背景 */
+        }
+        
+        &.bet-row-basic {
+            background: transparent; /* 使用透明背景，继承父容器背景 */
+        }
+    }
+    
+    /* 龙虎投注行 */
+    .bet-row-longhu {
+        height: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: stretch;
+    }
+}
+
+/* ================================
+   投注区域通用样式
+   ================================ */
+.bet-area {
+    flex: 1;
+    position: relative;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    margin: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(5px);
+    
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    &:active {
+        transform: translateY(0);
+        background: rgba(255, 255, 255, 0.15);
+    }
+    
+    &[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        
+        &:hover {
+            transform: none;
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+    }
+    
+    /* 投注区域内容 */
+    .bet-content {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        
+        .bet-info {
+            text-align: center;
+            
+            .bet-label {
+                display: block;
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+            
+            .bet-ratio {
+                display: block;
+                font-size: 12px;
+                opacity: 0.8;
+                color: #ffd700;
+            }
+        }
+        
+        .bet-status {
+            margin-top: 8px;
+            
+            .bet-amount-text {
+                background: rgba(255, 215, 0, 0.2);
+                color: #ffd700;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+        }
+    }
+}
+
+/* 龙虎特殊样式 */
+.bet-area-longhu {
+    .bet-area();
+    
+    .bet-content-longhu {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+        
+        .bet-image {
+            margin-bottom: 10px;
+        }
+        
+        .bet-label-longhu {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+    }
+}
+
+/* ================================
+   筹码显示样式 - 隐藏金额显示
+   ================================ */
+.bet-chip-container {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    
+    .bet-chip-item {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        
+        img {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+    }
+    
+    /* 隐藏总金额显示 */
+    .bet-total-amount {
+        display: none; /* 隐藏金额显示 */
+    }
+}
+
+/* ================================
+   特殊颜色样式
+   ================================ */
+.bet-idle {
+    .bet-content .bet-label {
+        color: #4a9eff;
+    }
+}
+
+.bet-zhuang {
+    .bet-content .bet-label {
+        color: #ff6b6b;
+    }
+}
+
+.bet-peace {
+    .bet-content .bet-label {
+        color: #4ecdc4;
+    }
+}
+
+.bet-idle-Pair, .bet-zhuang-Pair {
+    .bet-content .bet-label {
+        color: #ffd93d;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+}
+
+.bet-lucky {
+    .bet-content .bet-label {
+        color: #ff6b9d;
+    }
+}
+
+/* ================================
+   获胜闪烁动画
+   ================================ */
+.bet-win-green-bg {
+    animation: winFlash 1s infinite;
+    background: rgba(76, 217, 100, 0.3) !important;
+    border-color: #4cd964 !important;
+}
+
+@keyframes winFlash {
+    0%, 100% {
+        background: rgba(76, 217, 100, 0.3) !important;
+        box-shadow: 0 0 20px rgba(76, 217, 100, 0.6);
+    }
+    50% {
+        background: rgba(76, 217, 100, 0.7) !important;
+        box-shadow: 0 0 30px rgba(76, 217, 100, 0.9);
+    }
+}
+
+/* ================================
+   控制面板样式 - 优化布局
+   ================================ */
+.bet-control-panel {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    padding: 20px 15px;
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
+    min-height: 140px; /* 增加最小高度 */
+    
+    /* 筹码选择区域 */
+    .chip-selection-area {
+        margin-bottom: 25px; /* 增加底部间距 */
+        
+        .chip-list {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px; /* 增加筹码间距 */
+            flex-wrap: wrap;
+            padding: 10px 0; /* 添加上下内边距 */
+            
+            .chip-item {
+                position: relative;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                margin: 5px; /* 添加外边距 */
+                
+                &.active {
+                    transform: scale(1.15); /* 稍微增加激活状态的缩放 */
+                    
+                    img {
+                        filter: drop-shadow(0 0 15px #ffd700);
+                    }
+                }
+                
+                &:hover {
+                    transform: scale(1.08);
+                }
+                
+                img {
+                    border-radius: 50%;
+                    transition: filter 0.3s ease;
+                    border: 2px solid transparent; /* 添加边框占位 */
+                }
+                
+                .chip-value {
+                    position: absolute;
+                    bottom: -25px; /* 调整标签位置 */
+                    left: 50%;
+                    transform: translateX(-50%);
+                    color: white;
+                    font-size: 11px; /* 稍微增加字体大小 */
+                    font-weight: bold;
+                    text-align: center;
+                    background: rgba(0, 0, 0, 0.8);
+                    padding: 3px 8px; /* 增加内边距 */
+                    border-radius: 10px;
+                    white-space: nowrap;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                }
+                
+                .chip-mask {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 50px; /* 更新遮罩尺寸 */
+                    height: 50px;
+                    background: rgba(0, 0, 0, 0.6);
+                    border-radius: 50%;
+                    transition: opacity 0.3s ease;
+                }
+                
+                &.chip-more {
+                    .chip-more-btn {
+                        opacity: 0.8;
+                        border: 2px dashed rgba(255, 255, 255, 0.3);
+                        border-radius: 50%;
+                        
+                        &:hover {
+                            opacity: 1;
+                            border-color: rgba(255, 255, 255, 0.6);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /* 操作按钮区域 */
+    .action-buttons-area {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0; /* 添加上下内边距 */
+        
+        /* 调整按钮容器内的按钮间距 */
+        :deep(.bet-btns) {
+            gap: 12px; /* 增加按钮间距 */
+            flex-wrap: wrap; /* 允许换行 */
+            justify-content: center;
+            align-items: center;
+            
+            .bet-btn {
+                margin: 4px 6px; /* 添加按钮外边距 */
+                padding: 10px 24px; /* 增加按钮内边距 */
+                height: 40px; /* 增加按钮高度 */
+                font-size: 15px; /* 稍微增加字体大小 */
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                transition: all 0.3s ease;
+                
+                &:hover:not(:disabled) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                }
+                
+                &:active:not(:disabled) {
+                    transform: translateY(0);
+                }
+            }
+        }
+    }
+    
+    /* 隐藏游戏信息区域 */
+    .game-info-area {
+        display: none;
+    }
+}
+
+/* ================================
+   按钮通用样式
+   ================================ */
+.bet-btn {
     white-space: nowrap;
     cursor: pointer;
-    border-radius: 5px ;
-    color: #000000;
+    border-radius: 8px;
+    color: #fff;
     display: flex;
     align-items: center;
-    padding: 0 15px;
     outline: none;
     border: none;
     justify-content: center;
-    padding: 0px 26px 2px 26px;
-    height: 24px;
+    padding: 8px 20px;
+    height: 36px;
     font-weight: bold;
-    -webkit-tap-highlight-color: transparent;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    margin: 0 5px;
+    
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        
+        &:hover {
+            transform: none;
+        }
+    }
+    
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
 }
-.bet{
-    
-    background-image: url('~@/assets/imgs/bg1.jpg');
-    position: relative;
-    height: 100%;
 
-    .bet-wrapper{
-        height: 100%;
-    }
-    .bet-box{
-        // height: 152px;
-        height: 70%;
-        background-color: #336688;
-        color: white;
-    }
-    .bet-row{
-        height: 50%;
-        border-bottom: 1px solid rgb(85, 102, 136);
-        display: flex;
-        justify-content: space-between;
-    }
-    .bet-row-hu{
-        height: 100%;
-        border-bottom: 1px solid rgb(85, 102, 136);
-        display: flex;
-        justify-content: space-between;
-    }
-    .bet-idle-Pair,.bet-lucky,.bet-zhuang-Pair,.bet-idle,.bet-peace,.bet-zhuang{
-        flex: 1;
-        text-align: center;
-        height: 100%;
-        font-size: 22px;
-        line-height: 22px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        border: 1px solid #336688;
-        border-radius: 5px;
-        background-color: #2F8858;
-    }
-    .bet-idle-Pair{
-        position: relative;
-        border-left: none;
-        color: #1c2d9e;
-    }
-    .bet-idle{
-        color: #1c2d9e;
-    }
-    .bet-peace{
-        color: #085f08;
-        // color: #cbe0cb;
-    }
-    
-    .bet-lucky{
-        /* border-radius: 8px; */
-        color: #a61919;
-    }
-    .bet-zhuang-Pair{
-        position: relative;
-        border-right: none;
-        color: #a61919;
-    }
-    .bet-idle,.bet-peace{
-        // border-right: 1px solid #556688;
+/* ================================
+   调试面板样式（隐藏）
+   ================================ */
+.debug-panel {
+    display: none; /* 完全隐藏调试面板 */
+}
+
+/* ================================
+   响应式设计 - 优化移动端体验
+   ================================ */
+@media (max-width: 768px) {
+    .bet-control-panel {
+        padding: 15px 10px;
+        min-height: 130px;
+        
+        .chip-selection-area .chip-list {
+            gap: 12px;
+            padding: 8px 0;
+            
+            .chip-item {
+                margin: 3px;
+                
+                img {
+                    width: 45px;
+                    height: 45px;
+                }
+                
+                .chip-value {
+                    bottom: -22px;
+                    font-size: 10px;
+                    padding: 2px 6px;
+                }
+                
+                .chip-mask {
+                    width: 45px;
+                    height: 45px;
+                }
+            }
+        }
+        
+        .action-buttons-area {
+            padding: 8px 0;
+            
+            :deep(.bet-btns) {
+                gap: 8px;
+                
+                .bet-btn {
+                    margin: 3px 4px;
+                    padding: 8px 18px;
+                    height: 36px;
+                    font-size: 14px;
+                }
+            }
+        }
     }
     
-    .bet-adds{
-        font-weight: 800;
-        font-family: '隶书';
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    .bet-taiger{
-        height: 100%;
-    }
-    .bet-zhuang{
-        color: #a61919;
-        font-size: 20px;
-    }
-    .bet-zhuang-adds{
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    .bet-zhuang-six{
-        color: white;
-        font-weight: bold;
-        position: absolute;
-        right: 5px;
-        top: calc(50% - 20px);
-        font-size: 12px;
-        color: white;
-        -webkit-transform: scale(0.78);
-        transform: scale(0.78);
-    }
-    .bet-select{
-        height: 30%;
-        background: #141513;
+    .bet-area .bet-content .bet-info .bet-label {
+        font-size: 16px;
     }
     
-    .bet-select-chips{
-        padding: 0 6px;
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-        height: 50%;
+    .network-status {
+        top: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 11px;
     }
-    .bet-chip{
-        position: absolute;
-        bottom: 30px;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
-    .bet-chip-li{
-        width: 26px;
-        height: 16px;
-        line-height: 36px;
-        text-align: center;
-        border-radius: 50%;
-        color: #000000;
-        /* transform: scale(0.5); */
-        /* transform-origin: 50% 100%; */
-        position: absolute;
-        background-size: 100% 100%;
-        background-position: 0 0;
-    }
-    
-    .bet-chip-item{
-        display: flex;
-        position: relative;
-    }
-    .bet-free{
-        background-size: 100% 100%;
-        width: 80px;
-        margin-left: 8px;
-        background-color: #6F7975;
-        padding: 0px 3px;
-        text-align: center;
-        line-height: 18px;
-        justify-content: space-around;
-    }
-    .bet-free-bg{
-        background-image: url('~@/assets/imgs/bet/free.png');
-    }
-    .bet-no-free{
-        background-image: url('~@/assets/imgs/bet/free3.png');
-    }
-    .bet-free-coin{
-        width: 20px;
-        height: 20px;
-        border-radius: 10px;
-        background-size: 74px 25px;
-        background-position: -5px -3px;
-        background-repeat: no-repeat;
-        float: left;
-        background-image: url('~@/assets/imgs/bet/free.png');
-    }
-    .bet-chip-mask{
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        position: absolute;
-        top: 0px;
-        left: 0px;
-        background-color: rgba(0,0,0,.5);
-    }
-    .bet-ship-btn{
-        border-radius: 50%;
-    }
-    .bet-btns-block{
-        padding-top: 10px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .bet-amount{
-        width: 100%;
-        font-size: 18px;
-        font-weight: bolder;
-        color: #FA3534;
-        text-align: center;
-        display: flex;
-        justify-content: center;
-        bottom: -30px;
-        position: absolute;
+}
+
+@media (max-width: 480px) {
+    .bet-control-panel {
+        padding: 12px 8px;
+        min-height: 120px;
+        
+        .chip-selection-area .chip-list {
+            gap: 10px;
+            
+            .chip-item {
+                img {
+                    width: 40px;
+                    height: 40px;
+                }
+                
+                .chip-value {
+                    bottom: -20px;
+                    font-size: 9px;
+                    padding: 2px 5px;
+                }
+                
+                .chip-mask {
+                    width: 40px;
+                    height: 40px;
+                }
+            }
+        }
+        
+        .action-buttons-area {
+            :deep(.bet-btns) {
+                gap: 6px;
+                
+                .bet-btn {
+                    margin: 2px 3px;
+                    padding: 6px 14px;
+                    height: 32px;
+                    font-size: 13px;
+                }
+            }
+        }
     }
     
-    .bet-submit{
-        margin: 0 13px;
-        background-image: linear-gradient(90deg,#3bdf4b,#4dba73);
-        color: #fff;
+    .bet-area .bet-content {
+        padding: 6px;
+        
+        .bet-info .bet-label {
+            font-size: 14px;
+        }
+        
+        .bet-ratio {
+            font-size: 11px;
+        }
     }
-    .bet-cancel{
-        background-image: linear-gradient(90deg,#d54449,#c1655b);
-        color: #fff;
+    
+    .connection-overlay-content {
+        padding: 20px;
+        
+        .overlay-text {
+            font-size: 16px;
+        }
+        
+        .overlay-subtitle {
+            font-size: 12px;
+        }
     }
-    .bet-repeat{
-        border: 1px solid #ebd093;
-        color: #ebd093;
-        background: #2A2A2A;
-    }
-    .bet-win-green-bg{
-		animation: backGreenFlicker 1000ms infinite;
-		-webkit-animation:backGreenFlicker 1000ms infinite;
-	}
-	@keyframes backGreenFlicker{
-		from {background-color: rgba(19,133,53,1);}
-		to {background-color: rgba(19,133,53,.1);}
-	}
-	
-	@-webkit-keyframes backGreenFlicker 
-	{
-		from {background-color: rgba(19,133,53,1);}
-		to {background-color: rgba(19,133,53,.1);}
-	}
-    .bet-remain{
-        height: 20px;
+}
+
+/* ================================
+   大屏幕优化
+   ================================ */
+@media (min-width: 1024px) {
+    .bet-control-panel {
+        padding: 25px 20px;
+        min-height: 160px;
+        
+        .chip-selection-area .chip-list {
+            gap: 20px;
+            padding: 15px 0;
+            
+            .chip-item {
+                margin: 8px;
+                
+                img {
+                    width: 55px;
+                    height: 55px;
+                }
+                
+                .chip-value {
+                    bottom: -28px;
+                    font-size: 12px;
+                    padding: 4px 10px;
+                }
+                
+                .chip-mask {
+                    width: 55px;
+                    height: 55px;
+                }
+            }
+        }
+        
+        .action-buttons-area {
+            padding: 15px 0;
+            
+            :deep(.bet-btns) {
+                gap: 15px;
+                
+                .bet-btn {
+                    margin: 5px 8px;
+                    padding: 12px 28px;
+                    height: 44px;
+                    font-size: 16px;
+                }
+            }
+        }
     }
 }

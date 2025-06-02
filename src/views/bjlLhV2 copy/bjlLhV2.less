@@ -1,0 +1,242 @@
+
+.bet-btn{
+    white-space: nowrap;
+    cursor: pointer;
+    border-radius: 5px ;
+    color: #000000;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    outline: none;
+    border: none;
+    justify-content: center;
+    padding: 0px 26px 2px 26px;
+    height: 24px;
+    font-weight: bold;
+    -webkit-tap-highlight-color: transparent;
+}
+.bet{
+    
+    background-image: url('~@/assets/imgs/bg1.jpg');
+    position: relative;
+    height: 100%;
+
+    .bet-wrapper{
+        height: 100%;
+    }
+    .bet-box{
+        // height: 152px;
+        height: 70%;
+        background-color: #336688;
+        color: white;
+    }
+    .bet-row{
+        height: 50%;
+        border-bottom: 1px solid rgb(85, 102, 136);
+        display: flex;
+        justify-content: space-between;
+    }
+    .bet-row-hu{
+        height: 100%;
+        border-bottom: 1px solid rgb(85, 102, 136);
+        display: flex;
+        justify-content: space-between;
+    }
+    .bet-idle-Pair,.bet-lucky,.bet-zhuang-Pair,.bet-idle,.bet-peace,.bet-zhuang{
+        flex: 1;
+        text-align: center;
+        height: 100%;
+        font-size: 22px;
+        line-height: 22px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        border: 1px solid #336688;
+        border-radius: 5px;
+        background-color: #2F8858;
+    }
+    .bet-idle-Pair{
+        position: relative;
+        border-left: none;
+        color: #1c2d9e;
+    }
+    .bet-idle{
+        color: #1c2d9e;
+    }
+    .bet-peace{
+        color: #085f08;
+        // color: #cbe0cb;
+    }
+    
+    .bet-lucky{
+        /* border-radius: 8px; */
+        color: #a61919;
+    }
+    .bet-zhuang-Pair{
+        position: relative;
+        border-right: none;
+        color: #a61919;
+    }
+    .bet-idle,.bet-peace{
+        // border-right: 1px solid #556688;
+    }
+    
+    .bet-adds{
+        font-weight: 800;
+        font-family: '隶书';
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .bet-taiger{
+        height: 100%;
+    }
+    .bet-zhuang{
+        color: #a61919;
+        font-size: 20px;
+    }
+    .bet-zhuang-adds{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .bet-zhuang-six{
+        color: white;
+        font-weight: bold;
+        position: absolute;
+        right: 5px;
+        top: calc(50% - 20px);
+        font-size: 12px;
+        color: white;
+        -webkit-transform: scale(0.78);
+        transform: scale(0.78);
+    }
+    .bet-select{
+        height: 30%;
+        background: #141513;
+    }
+    
+    .bet-select-chips{
+        padding: 0 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        height: 50%;
+    }
+    .bet-chip{
+        position: absolute;
+        bottom: 30px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .bet-chip-li{
+        width: 26px;
+        height: 16px;
+        line-height: 36px;
+        text-align: center;
+        border-radius: 50%;
+        color: #000000;
+        /* transform: scale(0.5); */
+        /* transform-origin: 50% 100%; */
+        position: absolute;
+        background-size: 100% 100%;
+        background-position: 0 0;
+    }
+    
+    .bet-chip-item{
+        display: flex;
+        position: relative;
+    }
+    .bet-free{
+        background-size: 100% 100%;
+        width: 80px;
+        margin-left: 8px;
+        background-color: #6F7975;
+        padding: 0px 3px;
+        text-align: center;
+        line-height: 18px;
+        justify-content: space-around;
+    }
+    .bet-free-bg{
+        background-image: url('~@/assets/imgs/bet/free.png');
+    }
+    .bet-no-free{
+        background-image: url('~@/assets/imgs/bet/free3.png');
+    }
+    .bet-free-coin{
+        width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background-size: 74px 25px;
+        background-position: -5px -3px;
+        background-repeat: no-repeat;
+        float: left;
+        background-image: url('~@/assets/imgs/bet/free.png');
+    }
+    .bet-chip-mask{
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        background-color: rgba(0,0,0,.5);
+    }
+    .bet-ship-btn{
+        border-radius: 50%;
+    }
+    .bet-btns-block{
+        padding-top: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .bet-amount{
+        width: 100%;
+        font-size: 18px;
+        font-weight: bolder;
+        color: #FA3534;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        bottom: -30px;
+        position: absolute;
+    }
+    
+    .bet-submit{
+        margin: 0 13px;
+        background-image: linear-gradient(90deg,#3bdf4b,#4dba73);
+        color: #fff;
+    }
+    .bet-cancel{
+        background-image: linear-gradient(90deg,#d54449,#c1655b);
+        color: #fff;
+    }
+    .bet-repeat{
+        border: 1px solid #ebd093;
+        color: #ebd093;
+        background: #2A2A2A;
+    }
+    .bet-win-green-bg{
+		animation: backGreenFlicker 1000ms infinite;
+		-webkit-animation:backGreenFlicker 1000ms infinite;
+	}
+	@keyframes backGreenFlicker{
+		from {background-color: rgba(19,133,53,1);}
+		to {background-color: rgba(19,133,53,.1);}
+	}
+	
+	@-webkit-keyframes backGreenFlicker 
+	{
+		from {background-color: rgba(19,133,53,1);}
+		to {background-color: rgba(19,133,53,.1);}
+	}
+    .bet-remain{
+        height: 20px;
+    }
+}

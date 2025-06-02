@@ -11,7 +11,6 @@ let LH_WS_URL       = 'wss://wsslh.wuming888.com'
 let NN_WS_URL       = 'wss://wssnn.wuming888.com'
 let THREE_WS_URL    = 'wss://wssthree.wuming888.com'
 export default {
-//    SOURCE_URL,
     BJL_URL,
     USER_URL,
     TIGER_URL,
