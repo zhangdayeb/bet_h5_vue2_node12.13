@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useChips.js
+// src/views/bjlLh/composables/useChips.js
 // 筹码管理 - 筹码选择、显示、转换算法
 
 import { ref, computed } from 'vue'

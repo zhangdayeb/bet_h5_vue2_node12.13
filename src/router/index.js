@@ -1,9 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/views/Home.vue'
 import Cattle from '@/views/cattle/Cattle.vue'
-import BjlAndLh from '@/views/bjlAndLh/BjlAndLh.vue'
-import bjlLhXc from '@/views/bjlLhXc/bjlLhXc.vue'
-import bjlLhV2 from '@/views/bjlLhV2/bjlLhV2.vue'
+import bjlLh from '@/views/bjlLh/bjlLh.vue'
 import SanGong from '@/views/sanGong/SanGong.vue'
 
 const routes = [
@@ -18,11 +16,6 @@ const routes = [
         component: Cattle
     },
     {
-        path: '/bjlLh',
-        name: 'bjlLh',
-        component: BjlAndLh
-    },
-    {
         path: '/san',
         name: 'san',
         component: SanGong
@@ -33,9 +26,9 @@ const routes = [
 	    component: bjlLhXc
 	},
 	{
-	    path: '/bjlLhV2',
-	    name: 'bjlLhV2',
-	    component: bjlLhV2
+	    path: '/bjlLh',
+	    name: 'bjlLh',
+	    component: bjlLh
 	}
 ]
 

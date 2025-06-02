@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useGameConfig.js
+// src/views/bjlLh/composables/useGameConfig.js
 // 游戏配置管理 - 投注区域配置、游戏常量等
 
 import { ref, computed } from 'vue'

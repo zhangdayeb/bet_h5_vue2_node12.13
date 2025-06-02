@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useGameState.js
+// src/views/bjlLh/composables/useGameState.js
 // 游戏状态管理 - 桌台信息、开牌结果、游戏流程控制
 
 import { ref, computed } from 'vue'

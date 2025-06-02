@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useErrorHandler.js
+// src/views/bjlLh/composables/useErrorHandler.js
 // 错误处理和消息显示管理
 
 import { ref, computed } from 'vue'

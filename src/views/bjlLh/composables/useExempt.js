@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useExempt.js
+// src/views/bjlLh/composables/useExempt.js
 // 免佣设置的本地存储管理
 
 import { ref, computed } from 'vue'

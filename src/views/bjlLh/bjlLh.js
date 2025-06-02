@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/bjlLhV2.js
+// src/views/bjlLh/bjlLh.js
 // 修复筹码显示问题的版本
 
 import { ref, computed, onMounted, onBeforeUnmount, provide, nextTick } from 'vue'

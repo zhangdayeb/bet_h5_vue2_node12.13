@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useBetting.js
+// src/views/bjlLh/composables/useBetting.js
 // 下注逻辑管理 - 下注、取消、重复下注、下注记录
 
 import { ref, computed } from 'vue'

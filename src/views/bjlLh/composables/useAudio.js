@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useAudio.js
+// src/views/bjlLh/composables/useAudio.js
 // 音频管理 - 音效播放、背景音乐、音频状态处理
 
 import { ref } from 'vue'

@@ -1,4 +1,4 @@
-// src/views/bjlLhV2/composables/useSocket.js
+// src/views/bjlLh/composables/useSocket.js
 // WebSocket 连接管理 - 基于 optimizedSocket.js
 
 import { ref, computed } from 'vue'

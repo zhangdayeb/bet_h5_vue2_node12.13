@@ -211,7 +211,7 @@
 </template>
 
 <!-- 引入 JavaScript 逻辑 -->
-<script src='./bjlLhV2.js'></script>
+<script src='./bjlLh.js'></script>
 
 <!-- 引入样式文件 -->
-<style lang="less" src='./bjlLhV2.less' scoped></style>
+<style lang="less" src='./bjlLh.less' scoped></style>
