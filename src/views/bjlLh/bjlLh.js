@@ -366,7 +366,7 @@ const betOrder = async () => {
      * 设置免佣 - 薄包装
      */
     const setFree = () => {
-      if (betting.betSendFlag.value) {
+      if(gameState.tableRunInfo.end_time > 0){
         errorHandler.showLocalError('下注期间无法切换免佣状态')
         return
       }

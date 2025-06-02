@@ -1,6 +1,6 @@
 <template>
   	<div class="bet-btns" >
-		<button class="bet-btn bet-repeat" @click="repeatBet()" v-html="$t('bjlAndLh.repeatBet')"></button>
+		<!-- <button class="bet-btn bet-repeat" @click="repeatBet()" v-html="$t('bjlAndLh.repeatBet')"></button> -->
         <button class="bet-btn bet-submit" @click="submit()" v-html="$t('bjlAndLh.ok')"></button>
         <button class="bet-btn bet-cancel" @click="handleCancel()" v-html="$t('bjlAndLh.cancel')"></button>
         <!-- 免佣按钮 - 只在showFree为true时显示 -->
