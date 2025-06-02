@@ -1,8 +1,9 @@
 // src/views/bjlLh/bjlLh.js
-// 修复筹码显示问题的版本
+// 重构版本 - 更简洁的入口文件
 
 import { ref, computed, onMounted, onBeforeUnmount, provide, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 // 组件导入
 import SelectChip from '@/components/SelectChip'
@@ -34,8 +35,12 @@ export default {
   },
 
   setup() {
-    // 路由信息
+    // ================================
+    // 基础设置
+    // ================================
     const route = useRoute()
+    const { t } = useI18n()
+    const isDevelopment = computed(() => process.env.NODE_ENV === 'development')
 
     // ================================
     // 初始化各个功能模块
@@ -50,165 +55,192 @@ export default {
     const errorHandler = useErrorHandler()
 
     // ================================
-    // 计算属性
+    // 计算属性 - 简化版本
     // ================================
-
-    // 连接状态相关
     const connectionStatus = computed(() => socket.connectionStatus.value)
     const connectionStatusText = computed(() => socket.connectionStatusText.value)
     const isConnected = computed(() => socket.isConnected.value)
 
-    // 开发环境检测
-    const isDevelopment = computed(() => {
-      try {
-        return process.env.NODE_ENV === 'development'
-      } catch (e) {
-        return false
-      }
-    })
-
     // ================================
-    // 提供数据给子组件（依赖注入）
+    // 依赖注入
     // ================================
     provide('gameParams', {
       gameType: gameConfig.gameType,
       tableId: gameConfig.tableId,
       userId: gameConfig.userId
     })
-
     provide('socketManager', socket.socketManager)
     provide('audioManager', audio.audioHandle)
 
     // ================================
-    // 生命周期管理
+    // 核心初始化函数
     // ================================
-
+    
     /**
-     * 组件创建时的初始化
+     * 应用初始化
      */
-    const initializeComponent = async () => {
-      console.log('🚀 组件初始化开始')
+    const initializeApp = async () => {
+      console.log('🚀 应用初始化开始')
 
       try {
-        // 1. 获取路由参数
-        const tableId = route.query.table_id
-        const gameType = route.query.game_type
-        const userId = route.query.user_id
-
-        if (!tableId || !gameType || !userId) {
-          throw new Error('缺少必要的路由参数')
-        }
-
-        console.log('📊 游戏参数:', { tableId, gameType, userId })
-
+        // 1. 解析路由参数
+        const { tableId, gameType, userId } = parseRouteParams()
+        
         // 2. 初始化游戏配置
-        gameConfig.initGameConfig(gameType, tableId, userId)
-
-        // 3. 设置音频路径和欢迎消息
-        const audioPath = gameConfig.getAudioPath()
-        const welcomeKey = gameConfig.getWelcomeMessageKey()
+        initializeGameConfig(gameType, tableId, userId)
         
-        audio.initAudio(audioPath)
-        // 这里需要使用 i18n 来获取翻译后的消息
-        // errorHandler.setWelcomeMessage(this.$t(welcomeKey))
-
-        // 4. 初始化免佣设置
-        exempt.initExemptSetting(userId, tableId, gameType)
-
-        // 5. 初始化下注数据
-        betting.initBettingData(gameConfig.betTargetList.value)
-
-        // 6. 获取用户信息和筹码（关键修复）
-        await getUserChipsInfos()
-
-        // 7. 等待一个 tick 确保响应式数据更新
-        await nextTick()
+        // 3. 初始化音频和消息
+        initializeAudioAndMessages()
         
-        // 8. 验证筹码初始化状态
-        console.log('🔍 验证筹码初始化状态:', {
-          choiceChipsCount: chips.choiceChips.value.length,
-          currentChip: chips.currentChip.value?.text,
-          allChoiceChips: chips.choiceChips.value.map(c => c.text)
-        })
-
-        // 9. 获取当前下注记录
-        await getBetCurrentRecord()
-
-        // 10. 初始化 WebSocket 连接
-        await initializeSocket(gameType, tableId, userId)
-
-        console.log('✅ 组件初始化完成')
-
+        // 4. 初始化用户相关数据
+        await initializeUserData()
+        
+        // 5. 初始化WebSocket连接
+        await initializeConnection(gameType, tableId, userId)
+        
+        console.log('✅ 应用初始化完成')
+        
       } catch (error) {
-        console.error('❌ 组件初始化失败:', error)
+        console.error('❌ 应用初始化失败:', error)
         errorHandler.showServerError('游戏初始化失败，请刷新页面重试')
       }
     }
 
     /**
-     * 初始化 WebSocket 连接
+     * 解析路由参数
      */
-    const initializeSocket = async (gameType, tableId, userId) => {
+    const parseRouteParams = () => {
+      const tableId = route.query.table_id
+      const gameType = route.query.game_type
+      const userId = route.query.user_id
+
+      if (!tableId || !gameType || !userId) {
+        throw new Error('缺少必要的路由参数')
+      }
+
+      console.log('📊 路由参数:', { tableId, gameType, userId })
+      return { tableId, gameType, userId }
+    }
+
+    /**
+     * 初始化游戏配置
+     */
+    const initializeGameConfig = (gameType, tableId, userId) => {
+      console.log('🎮 初始化游戏配置')
+      
+      // 初始化游戏基础配置
+      gameConfig.initGameConfig(gameType, tableId, userId)
+      
+      // 初始化免佣设置
+      exempt.initExemptSetting(userId, tableId, gameType)
+      
+      // 初始化下注数据
+      betting.initBettingData(gameConfig.betTargetList.value)
+    }
+
+    /**
+     * 初始化音频和消息
+     */
+    const initializeAudioAndMessages = () => {
+      console.log('🎵 初始化音频和消息')
+      
+      // 初始化音频
+      const audioPath = gameConfig.getAudioPath()
+      audio.initAudio(audioPath)
+      
+      // 设置欢迎消息
+      const welcomeKey = gameConfig.getWelcomeMessageKey()
+      errorHandler.setWelcomeMessage(t(welcomeKey))
+    }
+
+    /**
+     * 初始化用户数据
+     */
+    const initializeUserData = async () => {
+      console.log('👤 初始化用户数据')
+      
       try {
-        // 设置事件监听器
-        setupSocketEventListeners()
-
-        // 建立连接
-        await socket.initSocket(gameType, tableId, userId)
-
+        // 获取用户信息
+        const userInfo = await userService.userIndex()
+        gameState.setUserInfo(userInfo)
+        
+        // 初始化筹码
+        chips.initChips(userInfo.user_chip)
+        await nextTick()
+        
+        // 验证筹码初始化
+        if (chips.choiceChips.value.length === 0) {
+          console.warn('⚠️ 使用默认筹码')
+          chips.initChips()
+        }
+        
+        // 获取下注记录
+        await getCurrentBetRecord()
+        
       } catch (error) {
-        console.error('❌ Socket 初始化失败:', error)
-        errorHandler.showConnectionError('网络连接失败，请检查网络设置')
+        console.error('❌ 用户数据初始化失败:', error)
+        // 使用默认筹码作为fallback
+        chips.initChips()
+        errorHandler.handleApiError(error, '获取用户信息失败')
       }
     }
 
     /**
-     * 设置 Socket 事件监听器
+     * 初始化WebSocket连接
      */
-    const setupSocketEventListeners = () => {
-      // 监听消息
+    const initializeConnection = async (gameType, tableId, userId) => {
+      console.log('🔌 初始化WebSocket连接')
+      
+      try {
+        // 设置Socket事件监听
+        setupSocketEventHandlers()
+        
+        // 建立连接
+        await socket.initSocket(gameType, tableId, userId)
+        
+      } catch (error) {
+        console.error('❌ WebSocket连接失败:', error)
+        errorHandler.showConnectionError('网络连接失败，请检查网络设置')
+      }
+    }
+
+    // ================================
+    // Socket事件处理
+    // ================================
+    
+    /**
+     * 设置Socket事件处理器
+     */
+    const setupSocketEventHandlers = () => {
       socket.on('message', handleSocketMessage)
-
-      // 监听连接状态变化
       socket.on('statusChange', handleConnectionStatusChange)
-
-      // 监听连接错误
       socket.on('error', handleSocketError)
     }
 
     /**
-     * 处理 Socket 消息
+     * 处理Socket消息
      */
     const handleSocketMessage = ({ result, originalEvent }) => {
       try {
         const processResult = gameState.processGameMessage(result)
-        
         if (!processResult) return
 
-        switch (processResult.type) {
-          case 'new_round':
-            handleNewRound(processResult)
-            break
-            
-          case 'table_update':
-            handleTableUpdate(processResult)
-            break
-            
-          case 'audio_state':
-            handleAudioStateUpdate(processResult)
-            break
-            
-          case 'bet_result':
-            handleBetResult(processResult)
-            break
-            
-          case 'game_result':
-            handleGameResult(processResult)
-            break
+        // 根据消息类型分发处理
+        const messageHandlers = {
+          'new_round': handleNewRound,
+          'table_update': handleTableUpdate,
+          'audio_state': handleAudioStateUpdate,
+          'bet_result': handleBetResult,
+          'game_result': handleGameResult
+        }
+
+        const handler = messageHandlers[processResult.type]
+        if (handler) {
+          handler(processResult)
         }
 
       } catch (error) {
-        console.error('❌ 处理Socket消息失败:', error)
+        console.error('❌ Socket消息处理失败:', error)
       }
     }
 
@@ -217,25 +249,19 @@ export default {
      */
     const handleNewRound = (roundInfo) => {
       console.log('🆕 新一局开始:', roundInfo.bureauNumber)
-      
-      // 清除上一局的投注显示
       gameConfig.clearAllBetAreas()
-      
-      // 获取新一局的下注记录
-      getBetCurrentRecord()
+      getCurrentBetRecord()
     }
 
     /**
-     * 处理桌台信息更新
+     * 处理桌台更新
      */
     const handleTableUpdate = (updateInfo) => {
       const { tableInfo } = updateInfo
       
-      // 处理音效播放
+      // 音效播放逻辑
       if (tableInfo.end_time === 1) {
-        setTimeout(() => {
-          audio.playStopBetSound()
-        }, 1000)
+        setTimeout(() => audio.playStopBetSound(), 1000)
       }
       
       if (tableInfo.end_time === gameState.startShowWelcomeTime.value) {
@@ -253,7 +279,6 @@ export default {
         audio.startBackgroundMusic()
       }
 
-      // 首次音频状态更新时显示欢迎消息
       if (!errorHandler.showWelcomeMsg.value.initShow) {
         errorHandler.showWelcomeMessage()
       }
@@ -273,71 +298,45 @@ export default {
     }
 
     /**
-     * 处理游戏开牌结果
+     * 处理游戏结果
      */
     const handleGameResult = (resultData) => {
       const { resultInfo, bureauNumber, flashIds } = resultData
       
-      // 播放开牌音效序列
-      audio.playOpenCardSequence(
-        resultInfo, 
-        gameConfig.gameType.value, 
-        bureauNumber
-      )
+      // 播放开牌音效
+      audio.playOpenCardSequence(resultInfo, gameConfig.gameType.value, bureauNumber)
       
       // 设置闪烁效果
       gameConfig.setFlashEffect(flashIds)
       
-      // 5秒后清除结果显示
-      setTimeout(() => {
-        handleResultDisplayEnd()
-      }, 5000)
+      // 5秒后清理显示
+      setTimeout(() => handleResultDisplayEnd(), 5000)
     }
 
     /**
-     * 处理开牌结果显示结束
+     * 处理结果显示结束
      */
     const handleResultDisplayEnd = () => {
-      console.log('🔄 开牌结果显示结束，清除筹码')
-      
-      // 清除闪烁效果
       gameConfig.setFlashEffect([])
-      
-      // 清除所有筹码显示
       gameConfig.clearAllBetAreas()
-      
-      // 重新获取下注记录
-      getBetCurrentRecord()
-      
-      // 重置接收状态
+      getCurrentBetRecord()
       gameState.receiveInfoState.value = false
-      
-      // 更新用户余额
-      getUserChipsInfos('balance')
+      updateUserBalance()
     }
 
     /**
      * 处理连接状态变化
      */
     const handleConnectionStatusChange = ({ oldStatus, newStatus }) => {
-      switch (newStatus) {
-        case socket.CONNECTION_STATUS.CONNECTED:
-          // 连接成功，可以进行游戏操作
-          break
-          
-        case socket.CONNECTION_STATUS.DISCONNECTED:
-          // 连接断开，停止下注
-          gameState.betState.value = false
-          break
-          
-        case socket.CONNECTION_STATUS.FAILED:
-          errorHandler.showConnectionError('连接失败，请刷新页面重试')
-          break
+      if (newStatus === socket.CONNECTION_STATUS.DISCONNECTED) {
+        gameState.betState.value = false
+      } else if (newStatus === socket.CONNECTION_STATUS.FAILED) {
+        errorHandler.showConnectionError('连接失败，请刷新页面重试')
       }
     }
 
     /**
-     * 处理 Socket 错误
+     * 处理Socket错误
      */
     const handleSocketError = (error) => {
       console.error('🔥 Socket错误:', error)
@@ -345,139 +344,43 @@ export default {
     }
 
     // ================================
-    // 用户和筹码相关方法（关键修复）
-    // ================================
-
-    /**
-     * 获取用户信息和筹码配置（修复版本）
-     */
-    const getUserChipsInfos = async (type) => {
-      try {
-        console.log('👤 开始获取用户信息，类型:', type)
-        const userInfo = await userService.userIndex()
-        gameState.setUserInfo(userInfo)
-
-        // 只在非余额更新时处理筹码
-        if (type !== 'balance') {
-          console.log('🎰 开始初始化筹码，用户筹码数据:', userInfo.user_chip)
-          
-          // 初始化筹码
-          chips.initChips(userInfo.user_chip)
-          
-          // 强制触发响应式更新
-          await nextTick()
-          
-          // 验证筹码初始化结果
-          console.log('🎯 筹码初始化后状态:', {
-            choiceChips: chips.choiceChips.value.length,
-            currentChip: chips.currentChip.value?.text,
-            hasCurrentChip: chips.hasCurrentChip.value
-          })
-          
-          // 如果筹码初始化失败，使用默认筹码
-          if (chips.choiceChips.value.length === 0) {
-            console.warn('⚠️ 筹码初始化失败，使用默认筹码')
-            chips.initChips()
-            await nextTick()
-          }
-        }
-
-        console.log('✅ 用户信息获取成功')
-
-      } catch (error) {
-        console.error('❌ 获取用户信息失败:', error)
-        errorHandler.handleApiError(error, '获取用户信息失败')
-        
-        // 失败时使用默认筹码
-        if (type !== 'balance') {
-          console.log('🎰 使用默认筹码（错误恢复）')
-          chips.initChips()
-          await nextTick()
-          
-          console.log('🎯 默认筹码初始化后状态:', {
-            choiceChips: chips.choiceChips.value.length,
-            currentChip: chips.currentChip.value?.text
-          })
-        }
-      }
-    }
-
-    /**
-     * 获取当前下注记录
-     */
-    const getBetCurrentRecord = async () => {
-      const gameParams = {
-        tableId: gameConfig.tableId.value,
-        gameType: gameConfig.gameType.value
-      }
-
-      const result = await betting.getCurrentBetRecord(
-        gameParams,
-        gameConfig.betTargetList.value,
-        chips.conversionChip
-      )
-
-      if (!result.success) {
-        console.warn('⚠️ 获取下注记录失败:', result.error)
-      }
-    }
-
-    // ================================
-    // 游戏操作方法
+    // 游戏操作方法 - 简化版本
     // ================================
 
     /**
      * 执行下注
      */
     const bet = (target) => {
-      try {
-        // 检查筹码状态
-        if (!chips.hasCurrentChip.value) {
-          errorHandler.showLocalError('请先选择筹码')
-          console.warn('⚠️ 没有选中筹码:', chips.currentChip.value)
-          return
-        }
+      // 基础验证
+      if (!chips.hasCurrentChip.value) {
+        return errorHandler.showLocalError('请先选择筹码')
+      }
 
-        // 检查是否允许点投
-        if (gameState.tableRunInfo.value.is_dianji === 0) {
-          sendErrorToServer('仅电投')
-          return
-        }
+      if (gameState.tableRunInfo.value.is_dianji === 0) {
+        return sendErrorToServer('仅电投')
+      }
 
-        // 本地验证
-        if (!gameState.betState.value) {
-          errorHandler.showLocalError('非下注时间')
-          return
-        }
+      if (!gameState.betState.value) {
+        return errorHandler.showLocalError('非下注时间')
+      }
 
-        if (!isConnected.value) {
-          errorHandler.showLocalError('网络连接中断，请稍候重试')
-          return
-        }
+      if (!isConnected.value) {
+        return errorHandler.showLocalError('网络连接中断，请稍候重试')
+      }
 
-        // 执行下注
-        const result = betting.placeBet(
-          target,
-          chips.currentChip.value,
-          gameConfig.betTargetList.value,
-          chips.conversionChip
-        )
+      // 执行下注
+      const result = betting.placeBet(
+        target,
+        chips.currentChip.value,
+        gameConfig.betTargetList.value,
+        chips.conversionChip
+      )
 
-        if (result.success) {
-          // 播放下注音效
-          audio.playBetSound()
-          
-          // 增加总金额
-          chips.addTotalMoney(result.amount)
-          
-          console.log('✅ 下注成功:', result.amount)
-        } else {
-          errorHandler.showLocalError(result.error)
-        }
-
-      } catch (error) {
-        console.error('❌ 下注执行失败:', error)
-        errorHandler.showLocalError('下注失败，请重试')
+      if (result.success) {
+        audio.playBetSound()
+        chips.addTotalMoney(result.amount)
+      } else {
+        errorHandler.showLocalError(result.error)
       }
     }
 
@@ -485,22 +388,15 @@ export default {
      * 重复下注
      */
     const repeatBet = () => {
-      try {
-        const result = betting.repeatBet(
-          gameConfig.betTargetList.value,
-          chips.conversionChip
-        )
+      const result = betting.repeatBet(
+        gameConfig.betTargetList.value,
+        chips.conversionChip
+      )
 
-        if (result.success) {
-          audio.playBetSound()
-          console.log('✅ 重复下注成功:', result.betsCount, '个投注')
-        } else {
-          errorHandler.showLocalError(result.error)
-        }
-
-      } catch (error) {
-        console.error('❌ 重复下注失败:', error)
-        errorHandler.showLocalError('重复下注失败')
+      if (result.success) {
+        audio.playBetSound()
+      } else {
+        errorHandler.showLocalError(result.error)
       }
     }
 
@@ -508,12 +404,11 @@ export default {
      * 确认下注
      */
     const betOrder = async () => {
-      try {
-        if (betting.betSuccess.value) {
-          errorHandler.showLocalError('请勿重复提交')
-          return
-        }
+      if (betting.betSuccess.value) {
+        return errorHandler.showLocalError('请勿重复提交')
+      }
 
+      try {
         const gameParams = {
           gameType: gameConfig.gameType.value,
           tableId: gameConfig.tableId.value
@@ -528,10 +423,7 @@ export default {
 
         if (result.success) {
           audio.playBetSuccessSound()
-          console.log('✅ 确认下注成功:', result.amount)
-          
-          // 更新用户余额
-          getUserChipsInfos('balance')
+          updateUserBalance()
         } else {
           errorHandler.showLocalError(result.error)
           handleCancel()
@@ -548,13 +440,8 @@ export default {
      * 取消下注
      */
     const handleCancel = () => {
-      const result = betting.cancelBet(gameConfig.betTargetList.value)
-      
-      if (result.success) {
-        // 重新获取下注记录
-        getBetCurrentRecord()
-        console.log('✅ 取消下注成功')
-      }
+      betting.cancelBet(gameConfig.betTargetList.value)
+      getCurrentBetRecord()
     }
 
     /**
@@ -562,79 +449,47 @@ export default {
      */
     const setFree = () => {
       if (betting.betSendFlag.value) {
-        errorHandler.showLocalError('下注期间无法切换免佣状态')
-        return
+        return errorHandler.showLocalError('下注期间无法切换免佣状态')
       }
-
       exempt.toggleExempt()
     }
 
     // ================================
-    // 筹码管理方法（关键修复）
+    // 筹码管理方法 - 简化版本
     // ================================
 
-    /**
-     * 选择当前筹码
-     */
-    const handleCureentChip = (chip) => {
-      console.log('🎯 选择筹码:', chip?.text)
-      chips.handleCurrentChip(chip)
-    }
-
-    /**
-     * 显示/隐藏筹码选择
-     */
-    const setShowChips = (show) => {
-      chips.setShowChips(show)
-    }
-
-    /**
-     * 确认筹码选择
-     */
+    const handleCureentChip = (chip) => chips.handleCurrentChip(chip)
+    const setShowChips = (show) => chips.setShowChips(show)
+    
     const handleConfirm = (selectedChips) => {
-      console.log('✅ 确认筹码选择:', selectedChips.map(c => c.text))
       chips.handleChipConfirm(selectedChips)
     }
-
-    /**
-     * 处理筹码选择错误
-     */
+    
     const hanldeSelectChipError = (errorData) => {
       errorHandler.showLocalError(errorData.msg)
     }
 
     // ================================
-    // 消息处理方法
+    // 消息处理方法 - 简化版本
     // ================================
 
-    /**
-     * 关闭欢迎消息
-     */
     const closeMsg = () => {
       errorHandler.handleWelcomeClose()
       audio.playWelcomeAudio()
     }
 
-    /**
-     * 发送错误消息到服务器
-     */
     const sendErrorToServer = (message) => {
       const data = {
         user_id: gameConfig.userId.value + '_',
         code: msgCode.code.outRange,
         msg: message
       }
-
       socket.sendMessage(data)
       errorHandler.showLocalError(message)
     }
 
-    /**
-     * 手动重连
-     */
     const manualReconnect = async () => {
       const success = await socket.manualReconnect()
-      
       if (success) {
         errorHandler.showSuccessMessage('重连成功')
       } else {
@@ -643,16 +498,51 @@ export default {
     }
 
     // ================================
-    // 调试和工具方法
+    // 辅助方法
     // ================================
 
     /**
-     * 显示连接统计信息
+     * 获取当前下注记录
+     */
+    const getCurrentBetRecord = async () => {
+      const gameParams = {
+        tableId: gameConfig.tableId.value,
+        gameType: gameConfig.gameType.value
+      }
+
+      const result = await betting.getCurrentBetRecord(
+        gameParams,
+        gameConfig.betTargetList.value,
+        chips.conversionChip
+      )
+
+      if (!result.success) {
+        console.warn('⚠️ 获取下注记录失败:', result.error)
+      }
+    }
+
+    /**
+     * 更新用户余额
+     */
+    const updateUserBalance = async () => {
+      try {
+        const userInfo = await userService.userIndex()
+        gameState.setUserInfo(userInfo)
+      } catch (error) {
+        console.error('❌ 更新余额失败:', error)
+      }
+    }
+
+    /**
+     * 兼容性方法 - 获取游戏对象
+     */
+    const getObjects = (callback) => gameConfig.getObjects(callback)
+
+    /**
+     * 调试方法
      */
     const showConnectionStats = () => {
       socket.showConnectionStats()
-      
-      // 显示其他模块的调试信息
       if (isDevelopment.value) {
         gameState.debugGameState()
         betting.debugBettingInfo()
@@ -663,68 +553,20 @@ export default {
       }
     }
 
-    /**
-     * 强制刷新筹码（调试用）
-     */
-    const forceRefreshChips = async () => {
-      console.log('🔄 强制刷新筹码')
-      chips.debugChipInfo()
-      await getUserChipsInfos()
-      await nextTick()
-      console.log('🔍 刷新后筹码状态:', {
-        choiceChips: chips.choiceChips.value,
-        currentChip: chips.currentChip.value
-      })
-    }
-
-    /**
-     * 检查筹码状态（调试用）
-     */
-    const checkChipStatus = () => {
-      console.log('🔍 检查筹码状态:', {
-        choiceChips: chips.choiceChips.value,
-        currentChip: chips.currentChip.value,
-        hasCurrentChip: chips.hasCurrentChip.value,
-        choiceChipsCount: chips.choiceChips.value.length
-      })
-    }
-
-    /**
-     * 获取游戏对象列表（兼容原版代码）
-     */
-    const getObjects = (callback) => {
-      return gameConfig.getObjects(callback)
-    }
-
     // ================================
     // 生命周期钩子
     // ================================
 
     onMounted(async () => {
       console.log('📱 组件挂载完成')
-      
-      // 初始化组件
-      await initializeComponent()
-      
-      // 确保投注区域显示正确
+      await initializeApp()
       gameConfig.clearAllBetAreas()
-      
-      // 再次验证筹码状态
-      await nextTick()
-      console.log('🔍 挂载后最终筹码状态:', {
-        choiceChips: chips.choiceChips.value.length,
-        currentChip: chips.currentChip.value?.text
-      })
     })
 
     onBeforeUnmount(() => {
-      console.log('💀 组件即将销毁，清理资源')
-      
-      // 清理各个模块的资源
+      console.log('💀 组件销毁，清理资源')
       socket.cleanup()
       errorHandler.cleanup()
-      
-      // 停止音频
       audio.muteAll()
     })
 
@@ -733,62 +575,58 @@ export default {
     // ================================
     
     return {
-      // ========== 响应式数据 ==========
-      
       // 连接状态
       connectionStatus,
       connectionStatusText,
       isConnected,
       
-      // 游戏配置
+      // 游戏配置 - 直接从模块导出
       gameType: gameConfig.gameType,
       tableId: gameConfig.tableId,
       userId: gameConfig.userId,
       betTargetList: gameConfig.betTargetList,
       
-      // 游戏状态
+      // 游戏状态 - 直接从模块导出
       betState: gameState.betState,
       tableRunInfo: gameState.tableRunInfo,
       resultInfo: gameState.resultInfo,
       userInfo: gameState.userInfo,
       
-      // 下注状态
+      // 下注状态 - 直接从模块导出
       betSendFlag: betting.betSendFlag,
       betSuccess: betting.betSuccess,
       
-      // 筹码管理
+      // 筹码管理 - 直接从模块导出
       choiceChips: chips.choiceChips,
       currentChip: chips.currentChip,
       showChips: chips.showChips,
       
-      // 免佣设置
+      // 免佣设置 - 直接从模块导出
       Freebool: exempt.Freebool,
       
-      // 错误和消息处理
+      // 错误处理 - 直接从模块导出
       showErrorMsg: errorHandler.showErrorMsg,
       errorMessageText: errorHandler.errorMessageText,
       showWelcomeMsg: errorHandler.showWelcomeMsg,
       welcomeMsg: errorHandler.welcomeMsg,
       
-      // 开发环境
+      // 开发环境标志
       isDevelopment,
       
-      // ========== 方法 ==========
-      
-      // 游戏操作
+      // 游戏操作方法
       bet,
       repeatBet,
       betOrder,
       handleCancel,
       setFree,
       
-      // 筹码管理
+      // 筹码管理方法
       handleCureentChip,
       setShowChips,
       handleConfirm,
       hanldeSelectChipError,
       
-      // 消息处理
+      // 消息处理方法
       closeMsg,
       hideErrorMessage: errorHandler.hideErrorMessage,
       
@@ -797,19 +635,7 @@ export default {
       
       // 工具方法
       showConnectionStats,
-      getObjects,
-      
-      // 调试方法（开发环境使用）
-      forceRefreshChips,
-      checkChipStatus,
-      
-      // ========== 计算属性和状态 ==========
-      
-      // 获取游戏状态摘要（用于调试）
-      getGameStateSummary: gameState.getGameStateSummary,
-      getBettingStateSummary: betting.getBettingStateSummary,
-      getAudioStatus: audio.getAudioStatus,
-      getErrorStatus: errorHandler.getErrorStatus
+      getObjects
     }
   }
 }
