@@ -40,23 +40,11 @@ export function useAudio() {
       console.log('👤 用户信息获取成功:', userInfo)
 
       // 🔧 方案A: 如果API返回audio_settings对象
-      if (userInfo.audio_settings) {
-        const { background_music, sound_effect } = userInfo.audio_settings
+      if (userInfo.beijing_open !== undefined || 
+               userInfo.yixiao_open !== undefined) {
         
-        backgroundMusicState.value = background_music ? 'on' : 'off'
-        musicEffectState.value = sound_effect ? 'on' : 'off'
-        
-        console.log('🎵 从audio_settings加载:', {
-          backgroundMusic: backgroundMusicState.value,
-          soundEffect: musicEffectState.value
-        })
-      }
-      // 🔧 方案B: 如果API返回单独字段
-      else if (userInfo.background_music_setting !== undefined || 
-               userInfo.sound_effect_setting !== undefined) {
-        
-        backgroundMusicState.value = userInfo.background_music_setting ? 'on' : 'off'
-        musicEffectState.value = userInfo.sound_effect_setting ? 'on' : 'off'
+        backgroundMusicState.value = userInfo.beijing_open ? 'on' : 'off'
+        musicEffectState.value = userInfo.yixiao_open ? 'on' : 'off'
         
         console.log('🎵 从单独字段加载:', {
           backgroundMusic: backgroundMusicState.value,

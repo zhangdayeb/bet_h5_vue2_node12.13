@@ -176,7 +176,10 @@ export default {
     const handleSocketMessage = ({ result, originalEvent }) => {
       try {
         console.log('📨 收到Socket消息:', result)
-        
+
+        if(result.code == 205){
+          audio.handleRemoteAudioControl(result)
+        }
         // 调用 gameState 完整处理消息（包含音效、闪烁、倒计时）
         const processResult = gameState.processGameMessage(
           result,
