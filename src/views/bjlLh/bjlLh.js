@@ -141,10 +141,18 @@ export default {
     }
 
     /**
-     * 显示欢迎消息
+     * 显示欢迎消息 - 调度员直接处理欢迎消息内容判断
      */
     const showWelcomeMessage = () => {
-      const welcomeKey = gameConfig.getWelcomeMessageKey()
+      // 直接根据游戏类型判断欢迎消息键，无需依赖配置模块
+      const welcomeKey = gameConfig.gameType.value == 3 ? 'bjlAndLh.welcomeBjl' : 'bjlAndLh.welcomeLh'
+      
+      console.log('🎉 显示欢迎消息:', {
+        gameType: gameConfig.gameType.value,
+        welcomeKey,
+        message: t(welcomeKey)
+      })
+      
       errorHandler.setWelcomeMessage(t(welcomeKey))
       errorHandler.showWelcomeMessage()
     }
@@ -167,12 +175,16 @@ export default {
      */
     const handleSocketMessage = ({ result, originalEvent }) => {
       try {
+        console.log('📨 收到Socket消息:', result)
+        
         // 调用 gameState 完整处理消息（包含音效、闪烁、倒计时）
         const processResult = gameState.processGameMessage(
           result,
           gameConfig.betTargetList.value,
           gameConfig.gameType.value
         )
+        
+        console.log('📋 消息处理结果:', processResult)
         
         if (!processResult) return
 
@@ -191,7 +203,11 @@ export default {
             break
             
           case 'other_message':
-            // 透传其他消息，暂不处理
+            console.log('📝 其他消息:', processResult.data)
+            break
+            
+          case 'empty_message':
+            console.log('📭 空消息')
             break
         }
 
@@ -360,9 +376,17 @@ export default {
     // 功能5: 欢迎消息协调
     // ================================
 
+    /**
+     * 欢迎消息关闭处理 - 关键的用户交互触发点
+     */
     const closeMsg = () => {
+      console.log('🎉 用户点击欢迎消息确认，触发音频播放')
+      
+      // 1. 关闭欢迎消息弹窗
       errorHandler.handleWelcomeClose()
-      // 用户交互后播放欢迎音频
+      
+      // 2. 关键：用户交互后播放欢迎音频（包含背景音乐启动）
+      // 这是浏览器音频策略要求的第一次用户交互
       audio.playWelcomeAudio()
     }
 
@@ -402,8 +426,8 @@ export default {
     // ================================
 
     const showConnectionStats = () => {
-      socket.showConnectionStats()
       if (isDevelopment.value) {
+        socket.showConnectionStats()
         console.group('=== 所有模块调试信息 ===')
         gameState.debugInfo()
         betting.debugBettingInfo()

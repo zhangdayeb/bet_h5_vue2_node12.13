@@ -1,4 +1,4 @@
-// 优化后的WebSocket管理器
+// 优化后的WebSocket管理器 - 完整修复版
 import configFile from "./config"
 
 // WebSocket连接状态枚举
@@ -23,18 +23,19 @@ class OptimizedSocketManager {
         this.url = url
         this.ws = null
         this.status = CONNECTION_STATUS.DISCONNECTED
+        this.initData = null  // 保存初始化数据
         
         // 配置选项
         this.options = {
-            maxReconnectAttempts: 10,           // 最大重连次数
-            reconnectInterval: 1000,            // 重连间隔(ms)
-            maxReconnectInterval: 30000,        // 最大重连间隔
-            heartbeatInterval: 30000,           // 心跳间隔
-            responseTimeout: 10000,             // 响应超时时间
-            enableAutoReconnect: true,          // 是否自动重连
-            enableHeartbeat: true,              // 是否启用心跳
-            enableMessageQueue: true,           // 是否启用消息队列
-            maxQueueSize: 100,                  // 最大队列长度
+            maxReconnectAttempts: 10,           
+            reconnectInterval: 1000,            
+            maxReconnectInterval: 30000,        
+            heartbeatInterval: 30000,           // 30秒心跳间隔
+            responseTimeout: 10000,             
+            enableAutoReconnect: true,          
+            enableHeartbeat: true,              
+            enableMessageQueue: true,           
+            maxQueueSize: 100,                  
             ...options
         }
         
@@ -47,7 +48,7 @@ class OptimizedSocketManager {
         
         // 消息队列
         this.messageQueue = []
-        this.pendingMessages = new Map() // 等待响应的消息
+        this.pendingMessages = new Map()
         
         // 事件监听器
         this.eventListeners = {
@@ -84,6 +85,9 @@ class OptimizedSocketManager {
                 this.setStatus(CONNECTION_STATUS.CONNECTING)
                 this.stats.connectTime = Date.now()
                 
+                // 保存初始化数据用于心跳
+                this.initData = initData
+                
                 this.ws = new WebSocket(this.url)
                 
                 // 连接成功
@@ -109,10 +113,8 @@ class OptimizedSocketManager {
                     resolve(event)
                 }
 
-                // 接收消息
-                this.ws.onmessage = (event) => {
-                    this.handleMessage(event)
-                }
+                // 接收消息 - 使用绑定好的方法
+                this.ws.onmessage = this.handleMessage
 
                 // 连接关闭
                 this.ws.onclose = (event) => {
@@ -153,6 +155,59 @@ class OptimizedSocketManager {
                 reject(error)
             }
         })
+    }
+
+    /**
+     * 处理接收到的消息 - 使用箭头函数确保 this 绑定
+     */
+    handleMessage = (event) => {
+        try {
+            let data
+            
+            // 尝试解析JSON
+            if (typeof event.data === 'string' && event.data.trim()) {
+                try {
+                    data = JSON.parse(event.data.trim())
+                } catch (parseError) {
+                    console.warn('Failed to parse message as JSON:', event.data)
+                    data = { raw: event.data }
+                }
+            } else {
+                data = { raw: event.data }
+            }
+
+            // 处理心跳响应
+            const isHeartbeat = this.checkIsHeartbeatResponse(data)
+            if (isHeartbeat) {
+                this.handleHeartbeatResponse()
+                console.log('💗 收到心跳响应:', data)
+                return // 心跳响应不需要进一步处理
+            }
+
+            // 处理消息响应
+            if (data.messageId && this.pendingMessages.has(data.messageId)) {
+                this.handleMessageResponse(data.messageId, data)
+            }
+
+            // 触发消息事件
+            this.emit('message', { data, originalEvent: event })
+            
+        } catch (error) {
+            console.error('Error handling message:', error, event.data)
+            this.stats.errorCount++
+        }
+    }
+
+    /**
+     * 检查是否为心跳响应
+     */
+    checkIsHeartbeatResponse(data) {
+        // 根据后端代码，心跳响应应该是 'pong'
+        return data && (
+            data === 'pong' || 
+            (typeof data === 'string' && data.includes('pong')) ||
+            (data.raw && data.raw === 'pong')
+        )
     }
 
     /**
@@ -206,45 +261,6 @@ class OptimizedSocketManager {
     }
 
     /**
-     * 处理接收到的消息
-     */
-    handleMessage(event) {
-        try {
-            let data
-            
-            // 尝试解析JSON
-            if (typeof event.data === 'string' && event.data.trim()) {
-                try {
-                    data = JSON.parse(event.data.trim())
-                } catch (parseError) {
-                    console.warn('Failed to parse message as JSON:', event.data)
-                    data = { raw: event.data }
-                }
-            } else {
-                data = { raw: event.data }
-            }
-
-            // 处理心跳响应
-            if (this.isHeartbeatResponse(data)) {
-                this.handleHeartbeatResponse()
-                return
-            }
-
-            // 处理消息响应
-            if (data.messageId && this.pendingMessages.has(data.messageId)) {
-                this.handleMessageResponse(data.messageId, data)
-            }
-
-            // 触发消息事件
-            this.emit('message', { data, originalEvent: event })
-            
-        } catch (error) {
-            console.error('Error handling message:', error, event.data)
-            this.stats.errorCount++
-        }
-    }
-
-    /**
      * 启动心跳
      */
     startHeartbeat() {
@@ -260,18 +276,34 @@ class OptimizedSocketManager {
     }
 
     /**
-     * 发送心跳
+     * 发送心跳 - 包含后端要求的必要参数
      */
     sendHeartbeat() {
+        if (!this.initData) {
+            console.warn('⚠️ 缺少初始化数据，无法发送心跳')
+            return
+        }
+
+        // 根据后端要求，心跳消息必须包含 user_id, game_type, table_id
         const heartbeatData = {
-            type: MESSAGE_TYPES.HEARTBEAT,
-            timestamp: Date.now(),
+            ping: true,  // 后端检查 'ping' 字段
+            user_id: this.initData.user_id,
+            game_type: this.initData.game_type,
+            table_id: this.initData.table_id,
             use_target: 'heartbeat',
             post_position: 'bet'
         }
         
         this.lastHeartbeatTime = Date.now()
-        this.send(heartbeatData, { isHeartbeat: true })
+        
+        try {
+            // 发送JSON格式的心跳数据
+            const heartbeatMessage = JSON.stringify(heartbeatData)
+            this.ws.send(heartbeatMessage)
+            console.log('💓 发送心跳:', heartbeatData)
+        } catch (error) {
+            console.error('❌ 心跳发送失败:', error)
+        }
     }
 
     /**
@@ -291,6 +323,8 @@ class OptimizedSocketManager {
         if (this.lastHeartbeatTime > 0) {
             const latency = Date.now() - this.lastHeartbeatTime
             this.updateLatencyStats(latency)
+            // 重置心跳时间，避免重复计算
+            this.lastHeartbeatTime = 0
         }
     }
 
@@ -436,16 +470,6 @@ class OptimizedSocketManager {
      */
     generateMessageId() {
         return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    }
-
-    /**
-     * 判断是否为心跳响应
-     */
-    isHeartbeatResponse(data) {
-        return data && (
-            data.type === MESSAGE_TYPES.HEARTBEAT ||
-            (typeof data === 'string' && data.includes('heartbeat'))
-        )
     }
 
     /**
