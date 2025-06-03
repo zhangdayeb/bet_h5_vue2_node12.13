@@ -372,21 +372,27 @@ export default {
       }
     }
 
-    /**
-     * 取消按钮 - 修复：传递具体音频函数
-     */
-    const handleCancel = () => {
-      // 智能取消逻辑（调用 betting 模块，传递具体音频函数）
-      const result = betting.cancelBet(
-        gameConfig.betTargetList.value,
-        audio.playCancelSound,  // 修复：传递取消音效函数
-        audio.playErrorSound    // 修复：传递错误音效函数
-      )
-      
-      if (!result.success) {
-        errorHandler.showLocalError(result.error)
-      }
-    }
+/**
+ * 取消按钮 - 简化版：不需要额外参数
+ */
+const handleCancel = () => {
+  // 智能取消逻辑（调用 betting 模块）
+  const result = betting.cancelBet(
+    gameConfig.betTargetList.value,
+    audio.playCancelSound,  // 取消音效函数
+    audio.playErrorSound    // 错误音效函数
+  )
+  
+  if (result.success) {
+    // 取消/恢复成功
+    errorHandler.showSuccessMessage(result.message, 2500)
+    console.log('✅ 取消操作成功:', result)
+  } else {
+    // 取消失败
+    errorHandler.showLocalError(result.error)
+    console.warn('⚠️ 取消操作失败:', result)
+  }
+}
 
     /**
      * 设置免佣 - 薄包装

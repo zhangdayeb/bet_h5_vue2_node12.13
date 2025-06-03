@@ -1,5 +1,5 @@
 // src/views/bjlLh/composables/useBetting.js
-// 精简版下注管理 - 支持追加投注，避免无效提交 - 修复音频调用
+// 精简版下注管理 - 支持追加投注，避免无效提交 - 修复音频调用 - 智能取消恢复
 
 import { ref, computed } from 'vue'
 import bjlService from '@/service/bjlService'
@@ -16,6 +16,9 @@ export function useBetting() {
   const totalAmount = ref(0)               // 当前总投注金额
   const isSubmitting = ref(false)          // 是否正在提交中
   const lastSubmittedBetData = ref(null)   // 上次成功提交的数据
+
+  // 🆕 新增：保存提交时的筹码显示状态
+  const lastSubmittedChipDisplay = ref(null)
 
   // 防抖控制
   const lastBetClickTime = ref(0)          // 投注区域点击时间
@@ -225,8 +228,40 @@ export function useBetting() {
   }
 
   // ================================
-  // 6. 确认按钮处理 - 修复音频调用
+  // 6. 确认按钮处理 - 修复音频调用 + 保存筹码显示状态
   // ================================
+
+  /**
+   * 🆕 保存提交成功时的筹码显示状态
+   * @param {Array} betTargetList - 投注区域列表
+   */
+  const saveSubmittedChipDisplay = (betTargetList) => {
+    const chipDisplaySnapshot = []
+    
+    betTargetList.forEach(item => {
+      if (item.betAmount > 0) {
+        chipDisplaySnapshot.push({
+          areaId: item.id,
+          label: item.label,
+          betAmount: item.betAmount,
+          showChip: [...item.showChip], // 深拷贝筹码显示数组
+          className: item.className,
+          flashClass: item.flashClass
+        })
+      }
+    })
+    
+    lastSubmittedChipDisplay.value = {
+      totalAmount: totalAmount.value,
+      chipDisplay: chipDisplaySnapshot,
+      timestamp: Date.now()
+    }
+    
+    console.log('💾 已保存提交时的筹码显示状态:', {
+      areas: chipDisplaySnapshot.length,
+      totalAmount: totalAmount.value
+    })
+  }
 
   /**
    * 确认投注（智能判断是否需要调用API）
@@ -307,6 +342,9 @@ export function useBetting() {
       // 下注成功
       betSendFlag.value = true
       
+      // 🆕 关键：保存提交成功时的筹码显示状态
+      saveSubmittedChipDisplay(betTargetList)
+      
       // 更新上次提交的数据
       updateSubmittedData(betTargetList)
       
@@ -343,11 +381,11 @@ export function useBetting() {
   }
 
   // ================================
-  // 7. 取消按钮处理 - 修复音频调用
+  // 7. 取消按钮处理 - 智能恢复逻辑
   // ================================
 
   /**
-   * 取消投注（智能判断）
+   * 取消投注（智能判断）- 简化版：只用 betSendFlag 判断
    * @param {Array} betTargetList - 投注区域列表
    * @param {Function} playCancelSound - 播放取消音效函数
    * @param {Function} playErrorSound - 播放错误音效函数
@@ -355,26 +393,93 @@ export function useBetting() {
    */
   const cancelBet = (betTargetList, playCancelSound, playErrorSound) => {
     if (betSendFlag.value) {
-      // 已发送到后台，无法取消
-      console.log('⚠️ 下注已提交到服务器，无法取消')
+      // ================================
+      // 已提交投注 = 恢复到提交时的筹码显示状态
+      // ================================
       
-      // 播放错误音效 - 修复：直接调用传入的音效函数
-      if (playErrorSound && typeof playErrorSound === 'function') {
-        try {
-          playErrorSound()
-          console.log('🔊 播放错误音效')
-        } catch (error) {
-          console.warn('⚠️ 错误音效播放失败:', error)
+      console.log('🔄 已提交投注，恢复到提交时的筹码显示状态')
+      
+      // 检查是否有保存的筹码显示状态
+      if (!lastSubmittedChipDisplay.value || !lastSubmittedChipDisplay.value.chipDisplay) {
+        console.warn('⚠️ 没有找到提交时的筹码显示状态')
+        
+        // 播放错误音效
+        if (playErrorSound && typeof playErrorSound === 'function') {
+          try {
+            playErrorSound()
+            console.log('🔊 播放错误音效')
+          } catch (error) {
+            console.warn('⚠️ 错误音效播放失败:', error)
+          }
+        }
+        
+        return { 
+          success: false, 
+          error: '没有找到提交时的状态记录' 
         }
       }
+
+      // 先清空所有投注显示
+      betTargetList.forEach(item => {
+        item.betAmount = 0
+        item.showChip = []
+        item.flashClass = ''
+      })
+
+      // 🆕 恢复到提交时的筹码显示状态（包含完整的筹码显示）
+      let restoredAmount = 0
+      let restoredAreas = 0
       
-      return { 
-        success: false, 
-        error: '下注已提交，无法取消' 
+      lastSubmittedChipDisplay.value.chipDisplay.forEach(savedState => {
+        const targetArea = betTargetList.find(item => item.id === savedState.areaId)
+        if (targetArea) {
+          // 直接恢复保存的状态
+          targetArea.betAmount = savedState.betAmount
+          targetArea.showChip = [...savedState.showChip] // 深拷贝
+          // 注意：不恢复 flashClass，因为那是开牌时的闪烁效果
+          
+          restoredAmount += savedState.betAmount
+          restoredAreas++
+          
+          console.log(`🔄 恢复区域 [${targetArea.label}]:`, {
+            amount: savedState.betAmount,
+            chipCount: savedState.showChip.length
+          })
+        }
+      })
+
+      // 恢复总金额
+      totalAmount.value = lastSubmittedChipDisplay.value.totalAmount
+
+      console.log('✅ 已恢复到提交时的筹码显示状态:', {
+        restoredAreas,
+        restoredAmount,
+        totalAmount: totalAmount.value
+      })
+
+      // 播放取消音效（表示恢复成功）
+      if (playCancelSound && typeof playCancelSound === 'function') {
+        try {
+          playCancelSound()
+          console.log('🔊 播放取消音效')
+        } catch (error) {
+          console.warn('⚠️ 取消音效播放失败:', error)
+        }
       }
+
+      return { 
+        success: true, 
+        message: `已恢复到提交时状态，共${restoredAreas}个区域，总金额${restoredAmount}`,
+        restoredAreas,
+        restoredAmount
+      }
+      
     } else {
-      // 未发送，可以取消
-      console.log('❌ 取消投注')
+      // ================================
+      // 未提交投注 = 完全清空（原逻辑不变）
+      // ================================
+      
+      console.log('❌ 取消未提交的投注')
 
       // 清除所有投注显示
       betTargetList.forEach(item => {
@@ -386,7 +491,7 @@ export function useBetting() {
       // 重置状态
       resetBettingState()
       
-      // 播放取消音效 - 修复：直接调用传入的音效函数
+      // 播放取消音效
       if (playCancelSound && typeof playCancelSound === 'function') {
         try {
           playCancelSound()
@@ -481,7 +586,7 @@ export function useBetting() {
   }
 
   /**
-   * 新局重置
+   * 新局重置 - 需要清空筹码显示记录
    * @param {Array} betTargetList - 投注区域列表
    */
   const resetForNewRound = (betTargetList) => {
@@ -499,10 +604,15 @@ export function useBetting() {
     
     // 清空提交历史
     lastSubmittedBetData.value = null
+    
+    // 🆕 清空筹码显示记录
+    lastSubmittedChipDisplay.value = null
+    
+    console.log('🧹 筹码显示记录已清空')
   }
 
   /**
-   * 重置下注状态
+   * 重置下注状态 - 但保留筹码显示记录（除非是新局）
    */
   const resetBettingState = () => {
     betSendFlag.value = false
@@ -526,6 +636,7 @@ export function useBetting() {
     
     resetBettingState()
     lastSubmittedBetData.value = null
+    lastSubmittedChipDisplay.value = null
   }
 
   // ================================
@@ -543,7 +654,8 @@ export function useBetting() {
       isSubmitting: isSubmitting.value,
       canConfirm: canConfirm.value,
       hasNewBetData: hasNewBetData.value,
-      lastSubmittedData: lastSubmittedBetData.value
+      lastSubmittedData: lastSubmittedBetData.value,
+      lastSubmittedChipDisplay: lastSubmittedChipDisplay.value
     }
   }
 
@@ -557,6 +669,11 @@ export function useBetting() {
       lastBetClick: lastBetClickTime.value,
       lastConfirmClick: lastConfirmClickTime.value
     })
+    console.log('筹码显示记录:', lastSubmittedChipDisplay.value ? {
+      areas: lastSubmittedChipDisplay.value.chipDisplay?.length || 0,
+      totalAmount: lastSubmittedChipDisplay.value.totalAmount,
+      timestamp: new Date(lastSubmittedChipDisplay.value.timestamp).toLocaleString()
+    } : '无记录')
     console.groupEnd()
   }
 
@@ -565,6 +682,9 @@ export function useBetting() {
     betSendFlag,
     totalAmount,
     isSubmitting,
+    
+    // 🆕 新增状态
+    lastSubmittedChipDisplay,
     
     // 计算属性
     canConfirm,
@@ -589,6 +709,7 @@ export function useBetting() {
     // 数据管理
     updateSubmittedData,
     getDetailedCurrentBetData,
+    saveSubmittedChipDisplay,
     
     // 初始化
     initBetting,
