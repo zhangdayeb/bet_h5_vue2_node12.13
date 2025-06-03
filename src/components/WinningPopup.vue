@@ -9,16 +9,16 @@
         <!-- 庆祝标题 -->
         <div class="winning-title">
           <h1 class="winning-text">🎉 恭喜中奖！</h1>
-          <div class="winning-subtitle">{{ $t('publicWords.congratulations') || '恭喜您获得奖金' }}</div>
+          <div class="winning-subtitle">{{'恭喜您获得奖金' }}</div>
         </div>
         
         <!-- 中奖金额显示 -->
         <div class="winning-amount-section">
-          <div class="winning-amount-label">中奖金额</div>
+          <!-- <div class="winning-amount-label">中奖金额</div>
           <div class="winning-amount-value">
             <span class="currency-symbol">¥</span>
             <span class="amount-number">{{ formattedAmount }}</span>
-          </div>
+          </div> -->
         </div>
         
         <!-- 装饰元素 -->

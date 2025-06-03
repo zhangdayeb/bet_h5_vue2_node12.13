@@ -157,7 +157,7 @@ export function useGameState() {
   const playWinningSound = () => {
     console.log('🎵 播放专用中奖音效 Play dedicated winning sound')
     // 可以播放特殊的中奖音效，比如金币声音
-    safePlayAudio(audioManager.value?.playSoundEffect, 'win.mp3')
+    safePlayAudio(audioManager.value?.playSoundEffect, 'win.wav')
   }
 
   // ================================
