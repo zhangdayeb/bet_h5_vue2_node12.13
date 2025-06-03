@@ -1,206 +1,62 @@
-// src/views/bjlLh/composables/useAudio.js
-// 独立音频管理 - 使用修复后的AudioHandle - 完整实现（包含中奖音效）
+// src/views/bjlLh/composables/useAudio.js - 修复版本
+// 解决中奖音效被打断的问题
 
 import { ref } from 'vue'
 import AudioHandle from '@/common/audioHandle.js'
 import userService from '@/service/userService.js'
 
 /**
- * 独立音频管理
+ * 修复版音频管理 - 解决中奖音效被打断问题
  */
 export function useAudio() {
   // 音频处理实例
   const audioHandle = ref(new AudioHandle())
   
   // 音频状态
-  const backgroundMusicState = ref('on')   // 背景音乐状态
-  const musicEffectState = ref('on')       // 音效状态
-  const audioInitialized = ref(false)     // 音频是否已初始化
-  const userSettingsLoaded = ref(false)   // 用户设置是否已加载
+  const backgroundMusicState = ref('on')
+  const musicEffectState = ref('on')
+  const audioInitialized = ref(false)
+  const userSettingsLoaded = ref(false)
 
   // ================================
-  // 功能1: 自动读取用户音效配置
-  // ================================
-
-  /**
-   * 自动加载用户音效配置
-   */
-  const loadUserAudioSettings = async () => {
-    try {
-      console.log('🎵 开始加载用户音效配置...')
-      
-      const userInfo = await userService.userIndex()
-      
-      if (!userInfo) {
-        console.warn('⚠️ 获取用户信息失败，使用默认音效设置')
-        setDefaultAudioSettings()
-        return
-      }
-
-      console.log('👤 用户信息获取成功:', userInfo)
-
-      // 🔧 方案A: 如果API返回audio_settings对象
-      if (userInfo.beijing_open !== undefined || 
-               userInfo.yixiao_open !== undefined) {
-        
-        backgroundMusicState.value = userInfo.beijing_open ? 'on' : 'off'
-        musicEffectState.value = userInfo.yixiao_open ? 'on' : 'off'
-        
-        console.log('🎵 从单独字段加载:', {
-          backgroundMusic: backgroundMusicState.value,
-          soundEffect: musicEffectState.value
-        })
-      }
-      // 🔧 方案C: API中没有音频设置，使用默认值
-      else {
-        console.log('🎵 API中无音频设置，使用默认配置')
-        setDefaultAudioSettings()
-      }
-
-      // 应用设置到AudioHandle
-      audioHandle.value.setBackgroundMusicState(backgroundMusicState.value)
-      audioHandle.value.setMusicEffectSate(musicEffectState.value)
-      
-      userSettingsLoaded.value = true
-      console.log('✅ 用户音效配置加载完成')
-
-    } catch (error) {
-      console.error('❌ 加载用户音效配置失败:', error)
-      setDefaultAudioSettings()
-    }
-  }
-
-  /**
-   * 设置默认音效配置
-   */
-  const setDefaultAudioSettings = () => {
-    console.log('🎵 设置默认音效配置')
-    
-    backgroundMusicState.value = 'on'
-    musicEffectState.value = 'on'
-    
-    audioHandle.value.setBackgroundMusicState('on')
-    audioHandle.value.setMusicEffectSate('on')
-    
-    userSettingsLoaded.value = true
-  }
-
-  // ================================
-  // 功能2: WebSocket 远程控制
+  // 🆕 中奖音效专用方法（高优先级）
   // ================================
 
   /**
-   * 处理 WebSocket 远程音频控制
-   * @param {Object} audioMessage - 音频控制消息
-   * @returns {boolean} 是否有状态变化
+   * 🆕 播放中奖音效（不会被打断）
+   * @param {string} soundName - 音效文件名
+   * @returns {boolean} 是否成功播放
    */
-  const handleRemoteAudioControl = (audioMessage) => {
-    console.log('🎵 [远程控制] 收到音频指令:', audioMessage)
-    
-    if (!audioMessage || !audioMessage.msg) {
-      console.warn('⚠️ 远程音频消息格式无效')
+  const playWinningSound = (soundName = 'win.wav') => {
+    if (!audioInitialized.value) {
+      console.warn('⚠️ 音频系统未初始化，无法播放中奖音效')
       return false
     }
 
-    const { msg } = audioMessage
-    let hasChanges = false
-
-    // 处理背景音乐远程控制
-    if (msg.backgroundMusicState && backgroundMusicState.value !== msg.backgroundMusicState) {
-      console.log(`🎵 [远程] 背景音乐: ${backgroundMusicState.value} → ${msg.backgroundMusicState}`)
-      
-      backgroundMusicState.value = msg.backgroundMusicState
-      audioHandle.value.setBackgroundMusicState(msg.backgroundMusicState)
-      
-      // 立即执行音乐控制
-      if (msg.backgroundMusicState === 'on') {
-        startBackgroundMusic()
-      } else {
-        stopBackgroundMusic()
-      }
-      
-      hasChanges = true
-    }
-
-    // 处理音效远程控制
-    if (msg.musicEffectSate && musicEffectState.value !== msg.musicEffectSate) {
-      console.log(`🔊 [远程] 音效: ${musicEffectState.value} → ${msg.musicEffectSate}`)
-      
-      musicEffectState.value = msg.musicEffectSate
-      audioHandle.value.setMusicEffectSate(msg.musicEffectSate)
-      
-      hasChanges = true
-    }
-
-    if (hasChanges) {
-      console.log('✅ [远程控制] 音频状态已更新')
-    }
-
-    return hasChanges
+    console.log('🎉 播放专用中奖音效（高优先级）:', soundName)
+    return audioHandle.value.playWinningSound(soundName)
   }
 
   /**
-   * 检查是否为远程音频控制消息
-   * @param {Object} message - WebSocket消息
-   * @returns {boolean} 是否为音频控制消息
+   * 🆕 根据中奖金额播放不同的音效序列（不会被打断）
+   * @param {number} amount - 中奖金额
    */
-  const isRemoteAudioMessage = (message) => {
-    return message && message.code === 205 // msgCode.code.audioState
-  }
-
-  // ================================
-  // 初始化方法（整合版）
-  // ================================
-
-  /**
-   * 完整的音频初始化
-   * @param {string} audioPath - 音频路径（bjl/longhu）
-   */
-  const initAudio = async (audioPath) => {
-    try {
-      console.log('🎵 开始音频系统完整初始化...')
-
-      if (!audioPath) {
-        console.warn('⚠️ 音频路径未设置')
-        return false
-      }
-
-      // 1. 设置音频路径
-      audioHandle.value.audioPath = audioPath
-      console.log('🎵 音频路径设置:', audioPath)
-
-      // 2. 自动加载用户音效配置
-      await loadUserAudioSettings()
-
-      // 3. 标记初始化完成
-      audioInitialized.value = true
-
-      console.log('✅ 音频系统初始化完成:', {
-        audioPath,
-        backgroundMusic: backgroundMusicState.value,
-        soundEffect: musicEffectState.value,
-        userSettingsLoaded: userSettingsLoaded.value
-      })
-
-      return true
-
-    } catch (error) {
-      console.error('❌ 音频系统初始化失败:', error)
-      
-      // 初始化失败时使用默认设置
-      setDefaultAudioSettings()
-      audioInitialized.value = true
-      
+  const playWinSoundByAmount = (amount) => {
+    if (!audioInitialized.value) {
+      console.warn('⚠️ 音频系统未初始化，无法播放中奖音效序列')
       return false
     }
+
+    console.log('🎵 播放中奖音效序列，金额:', amount)
+    return audioHandle.value.playWinSoundByAmount(amount)
   }
 
   // ================================
-  // 音频播放方法
+  // 🔧 修复普通音效方法（会被中奖音效打断）
   // ================================
 
   /**
-   * 通用音效播放函数
+   * 通用音效播放函数（可能被中奖音效打断）
    * @param {string} soundName - 音效文件名
    */
   const playSoundEffect = (soundName) => {
@@ -214,11 +70,14 @@ export function useAudio() {
       return false
     }
 
-    console.log('🔊 播放音效:', soundName)
+    console.log('🔊 播放普通音效（可被中奖音效打断）:', soundName)
     return audioHandle.value.startSoundEffect(soundName)
   }
 
-  // 预定义音效函数
+  // ================================
+  // 预定义音效函数（保持兼容性）
+  // ================================
+
   const playBetSound = () => playSoundEffect('betSound.mp3')
   const playBetSuccessSound = () => playSoundEffect('betsuccess.mp3')
   const playCancelSound = () => playSoundEffect('cancel.wav')
@@ -229,39 +88,15 @@ export function useAudio() {
   const playOpenCardSound = () => playSoundEffect('OPENCARD.mp3')
   const playWelcomeSound = () => playSoundEffect('welcome.wav')
 
-  // 🆕 新增中奖相关音效 NEW: Winning related sound effects
-  const playWinningSound = () => playSoundEffect('win.wav')           // 中奖音效
-  const playBigWinSound = () => playSoundEffect('bigwin.wav')         // 大奖音效
-  const playCoinSound = () => playSoundEffect('coin.wav')             // 金币音效
-  const playCelebrationSound = () => playSoundEffect('celebration.wav') // 庆祝音效
-  const playJackpotSound = () => playSoundEffect('jackpot.wav')        // 累积奖音效
+  // 🆕 中奖相关音效（高优先级，不会被打断）
+  const playBigWinSound = () => playWinningSound('bigwin.wav')
+  const playCoinSound = () => playWinningSound('coin.wav')
+  const playCelebrationSound = () => playWinningSound('celebration.wav')
+  const playJackpotSound = () => playWinningSound('jackpot.wav')
 
-  /**
-   * 🆕 根据中奖金额播放不同的音效
-   * Play different sound effects based on winning amount
-   * @param {number} amount - 中奖金额 Winning amount
-   */
-  const playWinSoundByAmount = (amount) => {
-    console.log('🎵 根据金额播放中奖音效 Play win sound by amount:', amount)
-    
-    if (amount >= 50000) {
-      // 超级大奖音效 (金额 >= 50000)
-      playJackpotSound()
-      setTimeout(() => playCelebrationSound(), 800) // 延迟播放庆祝音效
-      setTimeout(() => playCoinSound(), 1500) // 再延迟播放金币音效
-    } else if (amount >= 10000) {
-      // 大奖音效 (金额 >= 10000)
-      playBigWinSound()
-      setTimeout(() => playCelebrationSound(), 500) // 延迟播放庆祝音效
-    } else if (amount >= 1000) {
-      // 中等奖音效 (金额 >= 1000)
-      playWinningSound()
-      setTimeout(() => playCoinSound(), 300) // 延迟播放金币音效
-    } else if (amount > 0) {
-      // 小奖音效 (金额 > 0)
-      playCoinSound()
-    }
-  }
+  // ================================
+  // 游戏音效序列处理
+  // ================================
 
   /**
    * 播放结果音效
@@ -288,26 +123,238 @@ export function useAudio() {
   }
 
   /**
-   * 播放开牌音效序列
+   * 🔧 修复播放开牌音效序列（避免与中奖音效冲突）
    */
   const playOpenCardSequence = (resultInfo, gameType, bureauNumber) => {
     console.log('🎵 播放开牌音效序列')
+    
+    // 🔧 关键修复：先播放开牌音效
     playOpenCardSound()
     
+    // 🔧 关键修复：延迟播放结果音效，给中奖音效让路
     setTimeout(() => {
-      if (resultInfo.result && resultInfo.result.win) {
-        playResultSound(resultInfo.result.win, gameType)
+      // 🆕 检查是否有中奖，如果有中奖则跳过结果音效
+      const hasWinning = resultInfo && resultInfo.money && resultInfo.money > 0
+      
+      if (hasWinning) {
+        console.log('🎉 检测到中奖，跳过结果音效，优先播放中奖音效')
+        // 🆕 播放中奖音效序列
+        playWinSoundByAmount(resultInfo.money)
+      } else {
+        // 🆕 无中奖时播放结果音效
+        if (resultInfo.result && resultInfo.result.win) {
+          playResultSound(resultInfo.result.win, gameType)
+        }
       }
     }, 1000)
+  }
+
+  // ================================
+  // 🆕 音频状态管理和查询
+  // ================================
+
+  /**
+   * 获取音频状态（包含中奖音效保护状态）
+   */
+  const getAudioStatus = () => {
+    const baseStatus = {
+      initialized: audioInitialized.value,
+      userSettingsLoaded: userSettingsLoaded.value,
+      audioPath: audioHandle.value.audioPath,
+      backgroundMusic: backgroundMusicState.value,
+      soundEffect: musicEffectState.value
+    }
+
+    // 🆕 添加中奖音效保护状态
+    if (audioHandle.value.getAudioStatus) {
+      const extendedStatus = audioHandle.value.getAudioStatus()
+      return { ...baseStatus, ...extendedStatus }
+    }
+
+    return baseStatus
+  }
+
+  /**
+   * 🆕 检查中奖音效是否受保护
+   */
+  const isWinningAudioProtected = () => {
+    if (audioHandle.value.getAudioStatus) {
+      return audioHandle.value.getAudioStatus().winningAudioProtected
+    }
+    return false
+  }
+
+  /**
+   * 🆕 强制清除中奖音效保护（紧急情况使用）
+   */
+  const clearWinningProtection = () => {
+    if (audioHandle.value.clearWinningProtection) {
+      console.log('🚨 强制清除中奖音效保护期')
+      audioHandle.value.clearWinningProtection()
+    }
+  }
+
+  /**
+   * 🆕 清空音效队列
+   */
+  const clearAudioQueue = () => {
+    if (audioHandle.value.clearAudioQueue) {
+      console.log('🧹 清空音效队列')
+      audioHandle.value.clearAudioQueue()
+    }
+  }
+
+  // ================================
+  // 保持原有功能（用户设置加载等）
+  // ================================
+
+  /**
+   * 自动加载用户音效配置
+   */
+  const loadUserAudioSettings = async () => {
+    try {
+      console.log('🎵 开始加载用户音效配置...')
+      
+      const userInfo = await userService.userIndex()
+      
+      if (!userInfo) {
+        console.warn('⚠️ 获取用户信息失败，使用默认音效设置')
+        setDefaultAudioSettings()
+        return
+      }
+
+      console.log('👤 用户信息获取成功:', userInfo)
+
+      if (userInfo.beijing_open !== undefined || 
+               userInfo.yixiao_open !== undefined) {
+        
+        backgroundMusicState.value = userInfo.beijing_open ? 'on' : 'off'
+        musicEffectState.value = userInfo.yixiao_open ? 'on' : 'off'
+        
+        console.log('🎵 从单独字段加载:', {
+          backgroundMusic: backgroundMusicState.value,
+          soundEffect: musicEffectState.value
+        })
+      } else {
+        console.log('🎵 API中无音频设置，使用默认配置')
+        setDefaultAudioSettings()
+      }
+
+      audioHandle.value.setBackgroundMusicState(backgroundMusicState.value)
+      audioHandle.value.setMusicEffectSate(musicEffectState.value)
+      
+      userSettingsLoaded.value = true
+      console.log('✅ 用户音效配置加载完成')
+
+    } catch (error) {
+      console.error('❌ 加载用户音效配置失败:', error)
+      setDefaultAudioSettings()
+    }
+  }
+
+  const setDefaultAudioSettings = () => {
+    console.log('🎵 设置默认音效配置')
+    
+    backgroundMusicState.value = 'on'
+    musicEffectState.value = 'on'
+    
+    audioHandle.value.setBackgroundMusicState('on')
+    audioHandle.value.setMusicEffectSate('on')
+    
+    userSettingsLoaded.value = true
+  }
+
+  // ================================
+  // WebSocket远程控制
+  // ================================
+
+  const handleRemoteAudioControl = (audioMessage) => {
+    console.log('🎵 [远程控制] 收到音频指令:', audioMessage)
+    
+    if (!audioMessage || !audioMessage.msg) {
+      console.warn('⚠️ 远程音频消息格式无效')
+      return false
+    }
+
+    const { msg } = audioMessage
+    let hasChanges = false
+
+    if (msg.backgroundMusicState && backgroundMusicState.value !== msg.backgroundMusicState) {
+      console.log(`🎵 [远程] 背景音乐: ${backgroundMusicState.value} → ${msg.backgroundMusicState}`)
+      
+      backgroundMusicState.value = msg.backgroundMusicState
+      audioHandle.value.setBackgroundMusicState(msg.backgroundMusicState)
+      
+      if (msg.backgroundMusicState === 'on') {
+        startBackgroundMusic()
+      } else {
+        stopBackgroundMusic()
+      }
+      
+      hasChanges = true
+    }
+
+    if (msg.musicEffectSate && musicEffectState.value !== msg.musicEffectSate) {
+      console.log(`🔊 [远程] 音效: ${musicEffectState.value} → ${msg.musicEffectSate}`)
+      
+      musicEffectState.value = msg.musicEffectSate
+      audioHandle.value.setMusicEffectSate(msg.musicEffectSate)
+      
+      hasChanges = true
+    }
+
+    if (hasChanges) {
+      console.log('✅ [远程控制] 音频状态已更新')
+    }
+
+    return hasChanges
+  }
+
+  const isRemoteAudioMessage = (message) => {
+    return message && message.code === 205
+  }
+
+  // ================================
+  // 初始化方法
+  // ================================
+
+  const initAudio = async (audioPath) => {
+    try {
+      console.log('🎵 开始音频系统完整初始化...')
+
+      if (!audioPath) {
+        console.warn('⚠️ 音频路径未设置')
+        return false
+      }
+
+      audioHandle.value.audioPath = audioPath
+      console.log('🎵 音频路径设置:', audioPath)
+
+      await loadUserAudioSettings()
+
+      audioInitialized.value = true
+
+      console.log('✅ 音频系统初始化完成:', {
+        audioPath,
+        backgroundMusic: backgroundMusicState.value,
+        soundEffect: musicEffectState.value,
+        userSettingsLoaded: userSettingsLoaded.value
+      })
+
+      return true
+
+    } catch (error) {
+      console.error('❌ 音频系统初始化失败:', error)
+      setDefaultAudioSettings()
+      audioInitialized.value = true
+      return false
+    }
   }
 
   // ================================
   // 背景音乐控制
   // ================================
 
-  /**
-   * 启动背景音乐
-   */
   const startBackgroundMusic = () => {
     if (!audioInitialized.value) {
       console.warn('⚠️ 音频系统未初始化，无法播放背景音乐')
@@ -318,25 +365,16 @@ export function useAudio() {
     return true
   }
 
-  /**
-   * 停止背景音乐
-   */
   const stopBackgroundMusic = () => {
     console.log('🎵 停止背景音乐')
     audioHandle.value.closeSoundBackground()
   }
 
-  /**
-   * 停止音效
-   */
   const stopSoundEffect = () => {
-    console.log('🔊 停止音效')
+    console.log('🔊 停止普通音效（不影响中奖音效）')
     audioHandle.value.closeSoundEffect()
   }
 
-  /**
-   * 播放欢迎音频和背景音乐
-   */
   const playWelcomeAudio = () => {
     if (!audioInitialized.value) {
       console.warn('⚠️ 音频系统未初始化')
@@ -348,32 +386,21 @@ export function useAudio() {
   }
 
   // ================================
-  // 音频设置控制
+  // 设置控制
   // ================================
 
-  /**
-   * 设置背景音乐状态
-   * @param {string} state - 音乐状态（'on'/'off'）
-   */
   const setBackgroundMusicState = (state) => {
     backgroundMusicState.value = state
     audioHandle.value.setBackgroundMusicState(state)
     console.log('🎵 设置背景音乐状态:', state)
   }
 
-  /**
-   * 设置音效状态
-   * @param {string} state - 音效状态（'on'/'off'）
-   */
   const setMusicEffectState = (state) => {
     musicEffectState.value = state
     audioHandle.value.setMusicEffectSate(state)
     console.log('🔊 设置音效状态:', state)
   }
 
-  /**
-   * 切换背景音乐状态
-   */
   const toggleBackgroundMusic = () => {
     const newState = backgroundMusicState.value === 'on' ? 'off' : 'on'
     setBackgroundMusicState(newState)
@@ -387,9 +414,6 @@ export function useAudio() {
     return newState
   }
 
-  /**
-   * 切换音效状态
-   */
   const toggleSoundEffect = () => {
     const newState = musicEffectState.value === 'on' ? 'off' : 'on'
     setMusicEffectState(newState)
@@ -397,45 +421,21 @@ export function useAudio() {
   }
 
   // ================================
-  // 音频查询和工具函数
+  // 工具方法
   // ================================
 
-  /**
-   * 获取当前音频状态
-   */
-  const getAudioStatus = () => {
-    return {
-      initialized: audioInitialized.value,
-      userSettingsLoaded: userSettingsLoaded.value,
-      audioPath: audioHandle.value.audioPath,
-      backgroundMusic: backgroundMusicState.value,
-      soundEffect: musicEffectState.value,
-      audioHandle: {
-        backgroundMusicState: audioHandle.value.backgroundMusicState,
-        musicEffectSate: audioHandle.value.musicEffectSate
-      }
-    }
-  }
-
-  /**
-   * 检查音频是否可用
-   */
   const isAudioAvailable = () => {
     return audioInitialized.value && audioHandle.value
   }
 
-  /**
-   * 静音所有音频
-   */
   const muteAll = () => {
-    console.log('🔇 静音所有音频')
+    console.log('🔇 静音所有音频（包括中奖音效）')
     stopBackgroundMusic()
     stopSoundEffect()
+    // 🆕 强制清除中奖音效保护并静音
+    clearWinningProtection()
   }
 
-  /**
-   * 恢复所有音频
-   */
   const unmuteAll = () => {
     console.log('🔊 恢复所有音频')
     if (backgroundMusicState.value === 'on') {
@@ -443,18 +443,12 @@ export function useAudio() {
     }
   }
 
-  /**
-   * 重新加载用户音效设置
-   */
   const reloadUserSettings = async () => {
     console.log('🔄 重新加载用户音效设置')
     userSettingsLoaded.value = false
     await loadUserAudioSettings()
   }
 
-  /**
-   * 获取支持的音频格式
-   */
   const getSupportedFormats = () => {
     const audio = new Audio()
     const formats = {
@@ -472,11 +466,6 @@ export function useAudio() {
   // 组合音效序列
   // ================================
 
-  /**
-   * 播放特定的游戏音效序列
-   * @param {string} sequence - 音效序列名称
-   * @param {Object} params - 参数
-   */
   const playGameSequence = (sequence, params = {}) => {
     switch (sequence) {
       case 'bet_placed':
@@ -505,7 +494,7 @@ export function useAudio() {
         playWelcomeAudio()
         break
         
-      // 🆕 新增中奖序列 NEW: Winning sequences
+      // 🆕 中奖音效序列（高优先级）
       case 'winning_small':
         playCoinSound()
         break
@@ -536,79 +525,40 @@ export function useAudio() {
   }
 
   // ================================
-  // 调试和维护功能
+  // 调试和维护
   // ================================
 
-  /**
-   * 调试音频信息
-   */
   const debugAudioInfo = () => {
-    console.group('=== 独立音频管理调试信息 ===')
+    console.group('=== 修复版音频管理调试信息 ===')
     console.log('完整状态:', getAudioStatus())
+    console.log('中奖音效保护状态:', isWinningAudioProtected())
     console.log('用户设置已加载:', userSettingsLoaded.value)
     console.log('支持的格式:', getSupportedFormats())
     console.log('AudioHandle实例:', audioHandle.value)
     console.groupEnd()
   }
 
-  /**
-   * 重置音频系统
-   */
   const resetAudio = () => {
     console.log('🔄 重置音频系统')
     
     muteAll()
+    clearAudioQueue()
     backgroundMusicState.value = 'on'
     musicEffectState.value = 'on'
     audioInitialized.value = false
     userSettingsLoaded.value = false
     
-    // 重新创建 AudioHandle 实例
     audioHandle.value = new AudioHandle()
   }
 
-  /**
-   * 资源清理
-   */
   const cleanup = () => {
     console.log('🧹 清理音频资源')
     muteAll()
+    clearAudioQueue()
     resetAudio()
   }
 
-  /**
-   * 测试所有音效（开发环境用）
-   */
-  const testAllSounds = () => {
-    console.log('🎵 测试所有音效')
-    const sounds = [
-      'playBetSound',
-      'playBetSuccessSound', 
-      'playCancelSound',
-      'playTipSound',
-      'playErrorSound',
-      'playOpenCardSound',
-      'playWelcomeSound',
-      // 🆕 测试中奖音效
-      'playWinningSound',
-      'playBigWinSound',
-      'playCoinSound',
-      'playCelebrationSound',
-      'playJackpotSound'
-    ]
-    
-    sounds.forEach((soundName, index) => {
-      setTimeout(() => {
-        console.log('🔊 测试:', soundName)
-        eval(soundName + '()')
-      }, index * 1000)
-    })
-  }
-
-  /**
-   * 🆕 测试中奖音效按金额
-   * Test winning sounds by amount
-   */
+  // 🆕 测试中奖音效
   const testWinningSoundsByAmount = () => {
     console.log('🎵 测试不同金额的中奖音效')
     const amounts = [100, 1500, 12000, 55000]
@@ -617,7 +567,7 @@ export function useAudio() {
       setTimeout(() => {
         console.log(`🔊 测试金额 ${amount} 的中奖音效`)
         playWinSoundByAmount(amount)
-      }, index * 4000) // 每4秒测试一个
+      }, index * 6000) // 每6秒测试一个，给中奖音效充足时间
     })
   }
 
@@ -629,13 +579,13 @@ export function useAudio() {
     audioInitialized,
     userSettingsLoaded,
     
-    // 🆕 核心功能：独立初始化（包含用户设置加载）
+    // 核心功能
     initAudio,
     loadUserAudioSettings,
     reloadUserSettings,
     setDefaultAudioSettings,
     
-    // 🆕 核心功能：WebSocket远程控制
+    // WebSocket远程控制
     handleRemoteAudioControl,
     isRemoteAudioMessage,
     
@@ -643,10 +593,16 @@ export function useAudio() {
     setBackgroundMusicState,
     setMusicEffectState,
     
-    // 通用音效播放
-    playSoundEffect,
+    // 🆕 中奖音效（高优先级，不会被打断）
+    playWinningSound,
+    playWinSoundByAmount,
+    playBigWinSound,
+    playCoinSound,
+    playCelebrationSound,
+    playJackpotSound,
     
-    // 预定义音效
+    // 普通音效（可能被中奖音效打断）
+    playSoundEffect,
     playBetSound,
     playBetSuccessSound,
     playCancelSound,
@@ -656,14 +612,6 @@ export function useAudio() {
     playStartBetSound,
     playOpenCardSound,
     playWelcomeSound,
-    
-    // 🆕 中奖音效 NEW: Winning sound effects
-    playWinningSound,
-    playBigWinSound,
-    playCoinSound,
-    playCelebrationSound,
-    playJackpotSound,
-    playWinSoundByAmount,
     
     // 游戏结果音效
     playResultSound,
@@ -679,10 +627,13 @@ export function useAudio() {
     toggleBackgroundMusic,
     toggleSoundEffect,
     
-    // 查询方法
+    // 🆕 状态查询和管理
     getAudioStatus,
     isAudioAvailable,
     getSupportedFormats,
+    isWinningAudioProtected,
+    clearWinningProtection,
+    clearAudioQueue,
     
     // 音频控制
     muteAll,
@@ -695,7 +646,6 @@ export function useAudio() {
     resetAudio,
     cleanup,
     debugAudioInfo,
-    testAllSounds,
-    testWinningSoundsByAmount // 🆕 新增测试方法
+    testWinningSoundsByAmount
   }
 }
