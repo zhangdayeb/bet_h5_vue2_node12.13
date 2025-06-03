@@ -51,7 +51,7 @@ export function useChips() {
       })
     } else {
       // 使用默认筹码（去掉第一个，取前5个）
-      choiceChips.value = allChips.slice(1, 6).map(chip => ({ ...chip }))
+      choiceChips.value = allChips.slice(3, 8).map(chip => ({ ...chip }))
     }
 
     // 设置第一个为当前选中筹码

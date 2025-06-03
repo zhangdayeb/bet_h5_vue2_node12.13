@@ -123,6 +123,7 @@ export default {
         // 4. 关键依赖注入 - 将音频管理器注入到 gameState
         console.log('🔗 注入依赖关系')
         gameState.setAudioManager(audio)
+        gameState.setErrorHandler(errorHandler)
         
         // 5. 建立WebSocket连接
         console.log('🔌 建立WebSocket连接')

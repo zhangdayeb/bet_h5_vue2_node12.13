@@ -32,7 +32,7 @@ export function useGameState() {
 
   // 音频管理器实例 Audio manager instance
   const audioManager = ref(null)
-
+  const errorHandler = ref(null)
   // ================================
   // 音频管理器注入和安全调用 Audio Manager Injection and Safe Calling
   // ================================
@@ -45,6 +45,11 @@ export function useGameState() {
   const setAudioManager = (audio) => {
     audioManager.value = audio
     console.log('🎵 音频管理器已注入 Audio manager injected')
+  }
+
+  const setErrorHandler = (error) => {
+    errorHandler.value = error
+    console.log('错误管理器已经注入')
   }
 
   /**
@@ -187,6 +192,7 @@ export function useGameState() {
   // 开牌结果处理 Game Result Processing
   // ================================
   
+
 /**
  * 处理开牌结果 - 增加筹码清理功能
  * Handle game result processing - Added chip clearing functionality
@@ -351,6 +357,47 @@ const handleGameResult = (gameResult, betTargetList = [], gameType = null) => {
   }
 }
 
+/**
+ * 处理开牌结果 - 增加资金展示
+ * Handle game result processing - Added chip clearing functionality
+ * @param {Object} gameResult - 开牌结果对象 Game result object
+ * @param {Array} betTargetList - 投注目标列表 Bet target list
+ * @param {string|null} gameType - 游戏类型 Game type
+ * @returns {Object|null} 处理结果 Processing result
+ */
+const handleMoneyShow = (gameResult, betTargetList = [], gameType = null) => {
+  // 验证开牌结果数据完整性
+  // Validate game result data integrity
+  if (!gameResult || !gameResult.data || !gameResult.data.result_info) {
+    console.warn('⚠️ 开牌结果数据无效 Invalid game result data')
+    return null
+  }
+
+
+
+  const resultData = gameResult.data.result_info
+  const resultBureauNumber = gameResult.data.bureau_number
+  const showMoney = gameResult.data.result_info.money
+ 
+  if (showMoney>0) {
+       // 提示 信息
+       console.log('🎵 中奖金额：',showMoney)
+       errorHandler.showSuccessMessage('中奖'+showMoney)
+  }
+
+  // ================================
+  // 返回处理结果
+  // Return processing result
+  // ================================
+  
+  return {
+    type: 'game_result',
+    resultInfo: resultData,
+    bureauNumber: resultBureauNumber,
+    processed: true,
+  }
+}
+
   // ================================
   // 消息处理主入口 Main Message Processing Entry Point
   // ================================
@@ -379,6 +426,7 @@ const handleGameResult = (gameResult, betTargetList = [], gameType = null) => {
     // 开牌结果消息
     // Game result message
     if (messageResult.data && messageResult.data.result_info) {
+      handleMoneyShow(messageResult, betTargetList, gameType)
       return handleGameResult(messageResult, betTargetList, gameType)
     }
 
@@ -419,6 +467,7 @@ const handleGameResult = (gameResult, betTargetList = [], gameType = null) => {
     
     // 核心功能方法 Core Functionality Methods
     setAudioManager, // 设置音频管理器
+    setErrorHandler,
     processGameMessage, // 处理游戏消息主入口
     
     // 直接导出的方法（用于手动调用）Direct Export Methods (for manual calling)
