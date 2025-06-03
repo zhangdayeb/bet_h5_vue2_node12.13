@@ -1,5 +1,5 @@
 // src/common/audioHandle.js - 修复版本
-// 解决中奖音效被打断的问题
+// 解决中奖音效重复请求的问题 - 使用可用音效文件
 
 //音乐类型 背景音乐  音效
 const MUSIC_TYPE = {
@@ -32,6 +32,10 @@ function AudioHandle() {
     this.winningAudioProtected = false
     this.winningAudioTimer = null
 
+    // 🔧 新增：播放状态管理（防重复请求）
+    this.isPlayingWinningSound = false  // 中奖音效播放状态
+    this.playingAudioUrls = new Set()   // 正在播放的音频URL集合
+
     // 背景音乐初始化
     this.backgroundAudio.src = this.baseUrl + '/backgroundmusic/bg001.mp3'
     this.backgroundAudio.loop = true
@@ -49,16 +53,22 @@ function AudioHandle() {
     this.priorityAudio.src = ''
 
     // ================================
-    // 🆕 新增：音频播放优先级管理
+    // 🔧 修复：防重复请求的中奖音效播放 - 使用可用音效
     // ================================
     
     /**
-     * 播放中奖音效（高优先级，不会被打断）
+     * 播放中奖音效（高优先级，防重复请求）
      * @param {string} audioName - 音效文件名
      * @returns {boolean} 是否成功播放
      */
-    this.playWinningSound = (audioName = 'win.wav') => {
+    this.playWinningSound = (audioName = 'betsuccess.mp3') => {  // 🔧 使用可用的音效文件
         console.log('🎉 播放专用中奖音效（高优先级）:', audioName)
+        
+        // 🔧 防重复播放检查
+        if (this.isPlayingWinningSound) {
+            console.log('🔇 中奖音效正在播放中，跳过重复请求')
+            return false
+        }
         
         if (!this.audioPath) {
             console.warn('⚠️ audioPath 未设置，无法播放中奖音效')
@@ -81,9 +91,20 @@ function AudioHandle() {
         }
         
         const audioUrl = `${this.baseUrl}/${this.audioPath}/${lanMark[mark]}/${audioName}`
+        
+        // 🔧 检查是否已经在播放相同的音频
+        if (this.playingAudioUrls.has(audioUrl)) {
+            console.log('🔇 相同音频已在播放，跳过重复请求:', audioUrl)
+            return false
+        }
+        
         console.log('🎉 中奖音效URL:', audioUrl)
         
-        // 🔧 关键修复：使用专用的中奖音频实例
+        // 🔧 设置播放状态
+        this.isPlayingWinningSound = true
+        this.playingAudioUrls.add(audioUrl)
+        
+        // 🔧 使用专用的中奖音频实例
         this.winningAudio.src = audioUrl
         
         // 🆕 设置中奖音效保护期（防止被打断）
@@ -94,8 +115,21 @@ function AudioHandle() {
             clearTimeout(this.winningAudioTimer)
         }
         
+        // 🔧 播放成功处理
+        this.winningAudio.onended = () => {
+            console.log('✅ 中奖音效播放完成:', audioName)
+            this.resetWinningAudioState(audioUrl)
+        }
+        
+        // 🔧 播放失败处理
+        this.winningAudio.onerror = (error) => {
+            console.error('❌ 中奖音效播放失败:', error)
+            this.resetWinningAudioState(audioUrl)
+        }
+        
+        // 🔧 开始播放
         this.winningAudio.play().then(() => {
-            console.log('✅ 中奖音效播放成功:', audioName)
+            console.log('✅ 中奖音效开始播放:', audioName)
             
             // 🆕 设置保护期结束定时器（3秒后允许被打断）
             this.winningAudioTimer = setTimeout(() => {
@@ -104,11 +138,28 @@ function AudioHandle() {
             }, 3000)
             
         }).catch(error => {
-            console.error('❌ 中奖音效播放失败:', error)
-            this.winningAudioProtected = false
+            console.error('❌ 中奖音效播放启动失败:', error)
+            this.resetWinningAudioState(audioUrl)
         })
         
         return true
+    }
+
+    /**
+     * 🔧 重置中奖音效播放状态
+     * @param {string} audioUrl - 音频URL
+     */
+    this.resetWinningAudioState = (audioUrl) => {
+        this.isPlayingWinningSound = false
+        this.winningAudioProtected = false
+        this.playingAudioUrls.delete(audioUrl)
+        
+        if (this.winningAudioTimer) {
+            clearTimeout(this.winningAudioTimer)
+            this.winningAudioTimer = null
+        }
+        
+        console.log('🔄 中奖音效状态已重置')
     }
 
     /**
@@ -279,7 +330,7 @@ function AudioHandle() {
     }
 
     // ================================
-    // 🆕 新增：中奖音效序列播放
+    // 🔧 修复：中奖音效序列播放 - 使用可用音效
     // ================================
     
     /**
@@ -297,10 +348,10 @@ function AudioHandle() {
         }
         
         if (amount >= 50000) {
-            // 超级大奖音效序列
-            this.playWinningSound('jackpot.wav')
-            setTimeout(() => this.playWinningSound('celebration.wav'), 1000)
-            setTimeout(() => this.playWinningSound('coin.wav'), 2000)
+            // 🔧 超级大奖音效序列 - 使用可用音效
+            this.playWinningSound('betsuccess.mp3')
+            setTimeout(() => this.playWinningSound('betsuccess.mp3'), 1000)
+            setTimeout(() => this.playWinningSound('betSound.mp3'), 2000)
             
             // 🆕 超级大奖保护期更长
             this.winningAudioTimer = setTimeout(() => {
@@ -310,9 +361,9 @@ function AudioHandle() {
             }, 5000)
             
         } else if (amount >= 10000) {
-            // 大奖音效序列
-            this.playWinningSound('bigwin.wav')
-            setTimeout(() => this.playWinningSound('celebration.wav'), 800)
+            // 🔧 大奖音效序列 - 使用可用音效
+            this.playWinningSound('betsuccess.mp3')
+            setTimeout(() => this.playWinningSound('betSound.mp3'), 800)
             
             this.winningAudioTimer = setTimeout(() => {
                 this.winningAudioProtected = false
@@ -321,9 +372,9 @@ function AudioHandle() {
             }, 4000)
             
         } else if (amount >= 1000) {
-            // 中等奖音效序列
-            this.playWinningSound('win.wav')
-            setTimeout(() => this.playWinningSound('coin.wav'), 500)
+            // 🔧 中等奖音效序列 - 使用可用音效
+            this.playWinningSound('betsuccess.mp3')
+            setTimeout(() => this.playWinningSound('betSound.mp3'), 500)
             
             this.winningAudioTimer = setTimeout(() => {
                 this.winningAudioProtected = false
@@ -332,8 +383,8 @@ function AudioHandle() {
             }, 3000)
             
         } else if (amount > 0) {
-            // 小奖音效
-            this.playWinningSound('coin.wav')
+            // 🔧 小奖音效 - 使用可用音效
+            this.playWinningSound('betsuccess.mp3')
             
             this.winningAudioTimer = setTimeout(() => {
                 this.winningAudioProtected = false
@@ -402,8 +453,10 @@ function AudioHandle() {
             backgroundMusicState: this.backgroundMusicState,
             musicEffectSate: this.musicEffectSate,
             winningAudioProtected: this.winningAudioProtected,
+            isPlayingWinningSound: this.isPlayingWinningSound,
             audioQueueLength: this.audioQueue.length,
-            isPlayingSequence: this.isPlayingSequence
+            isPlayingSequence: this.isPlayingSequence,
+            playingAudioUrls: Array.from(this.playingAudioUrls)
         }
     }
     
@@ -413,6 +466,8 @@ function AudioHandle() {
     this.clearWinningProtection = () => {
         console.log('🚨 强制清除中奖音效保护期')
         this.winningAudioProtected = false
+        this.isPlayingWinningSound = false
+        this.playingAudioUrls.clear()
         
         if (this.winningAudioTimer) {
             clearTimeout(this.winningAudioTimer)
@@ -430,6 +485,30 @@ function AudioHandle() {
         console.log('🧹 清空音效队列')
         this.audioQueue = []
         this.isPlayingSequence = false
+    }
+
+    /**
+     * 🔧 强制停止所有中奖音效
+     */
+    this.stopAllWinningAudio = () => {
+        console.log('🔇 强制停止所有中奖音效')
+        
+        // 停止音频播放
+        if (this.winningAudio) {
+            this.winningAudio.pause()
+            this.winningAudio.currentTime = 0
+        }
+        
+        // 重置所有状态
+        this.isPlayingWinningSound = false
+        this.winningAudioProtected = false
+        this.playingAudioUrls.clear()
+        
+        // 清除定时器
+        if (this.winningAudioTimer) {
+            clearTimeout(this.winningAudioTimer)
+            this.winningAudioTimer = null
+        }
     }
 }
 

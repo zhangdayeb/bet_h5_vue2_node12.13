@@ -14,11 +14,11 @@
         
         <!-- 中奖金额显示 -->
         <div class="winning-amount-section">
-          <!-- <div class="winning-amount-label">中奖金额</div>
+          <div class="winning-amount-label">中奖金额</div>
           <div class="winning-amount-value">
             <span class="currency-symbol">¥</span>
             <span class="amount-number">{{ formattedAmount }}</span>
-          </div> -->
+          </div>
         </div>
         
         <!-- 装饰元素 -->

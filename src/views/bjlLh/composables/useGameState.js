@@ -85,7 +85,9 @@ export function useGameState() {
     showWinningPopup.value = true
 
     // 播放中奖音效
-    safePlayAudio(audioManager.value?.playWinningSound)
+    if (audioManager.value && audioManager.value.playWinningSound) {
+      audioManager.value.startSoundEffect('betSound.mp3')
+    }
 
     return true
   }
@@ -104,7 +106,7 @@ export function useGameState() {
    */
   const playWinningSound = () => {
     console.log('🎵 播放专用中奖音效')
-    safePlayAudio(audioManager.value?.playSoundEffect, 'win.wav')
+    safePlayAudio(audioManager.value?.playSoundEffect, 'betSound.mp3')
   }
 
   // ================================
@@ -319,6 +321,7 @@ export function useGameState() {
       setFlashEffect(flashIds, betTargetList)
     }
 
+
     return {
       type: 'game_result',
       resultInfo: resultData,
@@ -332,6 +335,7 @@ export function useGameState() {
    * 处理中奖金额显示
    */
   const handleMoneyShow = (gameResult) => {
+    console.log('===================================================== 处理中奖金额=========================================')
     // 验证开牌结果数据完整性
     if (!gameResult || !gameResult.data || !gameResult.data.result_info) {
       console.warn('⚠️ 中奖金额数据无效')
@@ -392,10 +396,9 @@ export function useGameState() {
     }
 
     // 开牌结果消息
-    if (messageResult.data && messageResult.data.result_info) {
-      // 先处理中奖金额显示
-      handleMoneyShow(messageResult)
-      
+    if (messageResult.data && messageResult.data.result_info) {    
+      // 处理中奖金额显示
+      handleMoneyShow(messageResult) 
       // 然后处理开牌结果（闪烁、音效、清理筹码）
       return handleGameResult(messageResult, betTargetList, gameType)
     }

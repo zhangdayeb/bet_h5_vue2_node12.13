@@ -27,7 +27,7 @@ export function useAudio() {
    * @param {string} soundName - 音效文件名
    * @returns {boolean} 是否成功播放
    */
-  const playWinningSound = (soundName = 'win.wav') => {
+  const playWinningSound = (soundName = 'betSuccess.mp3') => {
     if (!audioInitialized.value) {
       console.warn('⚠️ 音频系统未初始化，无法播放中奖音效')
       return false
