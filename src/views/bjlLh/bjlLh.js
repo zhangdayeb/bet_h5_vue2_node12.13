@@ -1,5 +1,5 @@
 // src/views/bjlLh/bjlLh.js
-// 新版本 - 调度员版本：只做协调和接口，具体业务由各模块完成 - 修复音频传递
+// 新版本 - 调度员版本：只做协调和接口，具体业务由各模块完成 - 集成中奖弹窗
 
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n'
 import SelectChip from '@/components/SelectChip'
 import BetBtnsXc from '@/components/BtnsXc'
 import WelcomeMssage from '@/components/Welcome.vue'
+import WinningPopup from '@/components/WinningPopup.vue' // 🆕 新增：中奖弹窗组件
 
 // 服务导入
 import userService from '@/service/userService.js'
@@ -28,7 +29,8 @@ export default {
   components: {
     SelectChip,
     BetBtnsXc,
-    WelcomeMssage
+    WelcomeMssage,
+    WinningPopup // 🆕 新增：注册中奖弹窗组件
   },
 
   setup() {
@@ -181,7 +183,7 @@ export default {
         if(result.code == 205){
           audio.handleRemoteAudioControl(result)
         }
-        // 调用 gameState 完整处理消息（包含音效、闪烁、倒计时）
+        // 调用 gameState 完整处理消息（包含音效、闪烁、倒计时、中奖弹窗）
         const processResult = gameState.processGameMessage(
           result,
           gameConfig.betTargetList.value,
@@ -200,6 +202,10 @@ export default {
             
           case 'game_result':
             handleGameResult(processResult)
+            break
+            
+          case 'winning_amount':
+            handleWinningAmount(processResult)
             break
             
           case 'table_update':
@@ -236,9 +242,25 @@ export default {
      */
     const handleGameResult = (resultData) => {
       if (resultData.processed) {
-        console.log('✅ 开牌结果已完整处理（音效+闪烁）')
+        console.log('✅ 开牌结果已完整处理（音效+闪烁+筹码清理）')
       } else {
         console.warn('⚠️ 开牌结果未完整处理')
+      }
+    }
+
+    /**
+     * 🆕 处理中奖金额 - 新增处理函数
+     * Handle winning amount - New processing function
+     */
+    const handleWinningAmount = (winningData) => {
+      console.log('💰 中奖金额处理结果:', winningData)
+      
+      if (winningData.winningPopupShown) {
+        console.log('🎉 中奖弹窗已显示')
+      } else if (winningData.amount > 0) {
+        console.log('⚠️ 有中奖但弹窗未显示，可能是重复或其他原因')
+      } else {
+        console.log('📝 本局无中奖')
       }
     }
 
@@ -305,50 +327,50 @@ export default {
       }
     }
 
-/**
- * 确认按钮 - 修复：传递具体音频函数 + 增加成功提示
- */
-const betOrder = async () => {
-  try {
-    // 智能确认逻辑（调用 betting 模块，传递具体音频函数）
-    const result = await betting.confirmBet(
-      gameConfig.betTargetList.value,
-      {
-        gameType: gameConfig.gameType.value,
-        tableId: gameConfig.tableId.value
-      },
-      exempt.Freebool.value,
-      audio.playBetSuccessSound,  // 修复：传递确认成功音效函数
-      audio.playTipSound          // 修复：传递提示音效函数
-    )
-    
-    // 处理投注结果
-    if (result.success) {
-      // ================================
-      // 新增：投注成功提示
-      // ================================
-      const successMessage = `投注成功！共${result.betsCount}注，总金额 ${result.amount}`
-      console.log('✅ 投注成功:', {
-        betsCount: result.betsCount,
-        amount: result.amount,
-        message: successMessage
-      })
-      
-      // 显示成功提示消息
-      errorHandler.showSuccessMessage(successMessage, 2000)
-      
-    } else if (!result.noApiCall) {
-      // 投注失败（非重复提交的情况）
-      errorHandler.showLocalError(result.error)
+    /**
+     * 确认按钮 - 修复：传递具体音频函数 + 增加成功提示
+     */
+    const betOrder = async () => {
+      try {
+        // 智能确认逻辑（调用 betting 模块，传递具体音频函数）
+        const result = await betting.confirmBet(
+          gameConfig.betTargetList.value,
+          {
+            gameType: gameConfig.gameType.value,
+            tableId: gameConfig.tableId.value
+          },
+          exempt.Freebool.value,
+          audio.playBetSuccessSound,  // 修复：传递确认成功音效函数
+          audio.playTipSound          // 修复：传递提示音效函数
+        )
+        
+        // 处理投注结果
+        if (result.success) {
+          // ================================
+          // 投注成功提示
+          // ================================
+          const successMessage = `投注成功！共${result.betsCount}注，总金额 ${result.amount}`
+          console.log('✅ 投注成功:', {
+            betsCount: result.betsCount,
+            amount: result.amount,
+            message: successMessage
+          })
+          
+          // 显示成功提示消息
+          errorHandler.showSuccessMessage(successMessage, 2000)
+          
+        } else if (!result.noApiCall) {
+          // 投注失败（非重复提交的情况）
+          errorHandler.showLocalError(result.error)
+        }
+        // 注意：result.noApiCall = true 的情况（重复提交）不显示错误，
+        // 因为 betting 模块内部已经播放了提示音效
+        
+      } catch (error) {
+        console.error('❌ 确认下注失败:', error)
+        errorHandler.handleApiError(error, '下注失败，请重试')
+      }
     }
-    // 注意：result.noApiCall = true 的情况（重复提交）不显示错误，
-    // 因为 betting 模块内部已经播放了提示音效
-    
-  } catch (error) {
-    console.error('❌ 确认下注失败:', error)
-    errorHandler.handleApiError(error, '下注失败，请重试')
-  }
-}
 
     /**
      * 取消按钮 - 修复：传递具体音频函数
@@ -416,7 +438,29 @@ const betOrder = async () => {
     }
 
     // ================================
-    // 功能6: 连接管理协调
+    // 🆕 功能6: 中奖弹窗事件处理 NEW: Winning Popup Event Handling
+    // ================================
+
+    /**
+     * 处理中奖弹窗关闭事件
+     * Handle winning popup close event
+     */
+    const handleWinningPopupClose = () => {
+      console.log('🎉 用户关闭中奖弹窗')
+      gameState.closeWinningDisplay()
+    }
+
+    /**
+     * 处理中奖音效播放请求
+     * Handle winning sound play request
+     */
+    const handlePlayWinSound = () => {
+      console.log('🎵 中奖弹窗请求播放音效')
+      gameState.playWinningSound()
+    }
+
+    // ================================
+    // 功能7: 连接管理协调
     // ================================
 
     const manualReconnect = async () => {
@@ -443,6 +487,7 @@ const betOrder = async () => {
       console.log('💀 组件销毁，清理资源')
       socket.cleanup()
       errorHandler.cleanup()
+      gameState.cleanup() // 🆕 新增：清理游戏状态（包括中奖弹窗）
       audio.muteAll()
     })
 
@@ -484,6 +529,10 @@ const betOrder = async () => {
       tableRunInfo: gameState.tableRunInfo,
       bureauNumber: gameState.bureauNumber,
       
+      // 🆕 中奖弹窗状态 - 直接从模块导出 NEW: Winning popup state - directly from module
+      showWinningPopup: gameState.showWinningPopup,
+      winningAmount: gameState.winningAmount,
+      
       // 下注状态 - 直接从模块导出
       betSendFlag: betting.betSendFlag,
       totalAmount: betting.totalAmount,
@@ -521,6 +570,10 @@ const betOrder = async () => {
       // 消息处理接口
       closeMsg,
       hideErrorMessage: errorHandler.hideErrorMessage,
+      
+      // 🆕 中奖弹窗接口 NEW: Winning popup interface
+      handleWinningPopupClose,
+      handlePlayWinSound,
       
       // 连接管理接口
       manualReconnect,

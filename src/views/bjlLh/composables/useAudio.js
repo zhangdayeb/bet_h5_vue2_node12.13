@@ -1,5 +1,5 @@
 // src/views/bjlLh/composables/useAudio.js
-// 独立音频管理 - 使用修复后的AudioHandle - 完整实现
+// 独立音频管理 - 使用修复后的AudioHandle - 完整实现（包含中奖音效）
 
 import { ref } from 'vue'
 import AudioHandle from '@/common/audioHandle.js'
@@ -228,6 +228,40 @@ export function useAudio() {
   const playStartBetSound = () => playSoundEffect('bet.wav')
   const playOpenCardSound = () => playSoundEffect('OPENCARD.mp3')
   const playWelcomeSound = () => playSoundEffect('welcome.wav')
+
+  // 🆕 新增中奖相关音效 NEW: Winning related sound effects
+  const playWinningSound = () => playSoundEffect('win.mp3')           // 中奖音效
+  const playBigWinSound = () => playSoundEffect('bigwin.mp3')         // 大奖音效
+  const playCoinSound = () => playSoundEffect('coin.wav')             // 金币音效
+  const playCelebrationSound = () => playSoundEffect('celebration.mp3') // 庆祝音效
+  const playJackpotSound = () => playSoundEffect('jackpot.mp3')        // 累积奖音效
+
+  /**
+   * 🆕 根据中奖金额播放不同的音效
+   * Play different sound effects based on winning amount
+   * @param {number} amount - 中奖金额 Winning amount
+   */
+  const playWinSoundByAmount = (amount) => {
+    console.log('🎵 根据金额播放中奖音效 Play win sound by amount:', amount)
+    
+    if (amount >= 50000) {
+      // 超级大奖音效 (金额 >= 50000)
+      playJackpotSound()
+      setTimeout(() => playCelebrationSound(), 800) // 延迟播放庆祝音效
+      setTimeout(() => playCoinSound(), 1500) // 再延迟播放金币音效
+    } else if (amount >= 10000) {
+      // 大奖音效 (金额 >= 10000)
+      playBigWinSound()
+      setTimeout(() => playCelebrationSound(), 500) // 延迟播放庆祝音效
+    } else if (amount >= 1000) {
+      // 中等奖音效 (金额 >= 1000)
+      playWinningSound()
+      setTimeout(() => playCoinSound(), 300) // 延迟播放金币音效
+    } else if (amount > 0) {
+      // 小奖音效 (金额 > 0)
+      playCoinSound()
+    }
+  }
 
   /**
    * 播放结果音效
@@ -471,6 +505,31 @@ export function useAudio() {
         playWelcomeAudio()
         break
         
+      // 🆕 新增中奖序列 NEW: Winning sequences
+      case 'winning_small':
+        playCoinSound()
+        break
+        
+      case 'winning_medium':
+        playWinningSound()
+        setTimeout(() => playCoinSound(), 300)
+        break
+        
+      case 'winning_big':
+        playBigWinSound()
+        setTimeout(() => playCelebrationSound(), 500)
+        break
+        
+      case 'winning_jackpot':
+        playJackpotSound()
+        setTimeout(() => playCelebrationSound(), 800)
+        setTimeout(() => playCoinSound(), 1500)
+        break
+        
+      case 'winning_by_amount':
+        playWinSoundByAmount(params.amount || 0)
+        break
+        
       default:
         console.warn('⚠️ 未知的音效序列:', sequence)
     }
@@ -529,7 +588,13 @@ export function useAudio() {
       'playTipSound',
       'playErrorSound',
       'playOpenCardSound',
-      'playWelcomeSound'
+      'playWelcomeSound',
+      // 🆕 测试中奖音效
+      'playWinningSound',
+      'playBigWinSound',
+      'playCoinSound',
+      'playCelebrationSound',
+      'playJackpotSound'
     ]
     
     sounds.forEach((soundName, index) => {
@@ -537,6 +602,22 @@ export function useAudio() {
         console.log('🔊 测试:', soundName)
         eval(soundName + '()')
       }, index * 1000)
+    })
+  }
+
+  /**
+   * 🆕 测试中奖音效按金额
+   * Test winning sounds by amount
+   */
+  const testWinningSoundsByAmount = () => {
+    console.log('🎵 测试不同金额的中奖音效')
+    const amounts = [100, 1500, 12000, 55000]
+    
+    amounts.forEach((amount, index) => {
+      setTimeout(() => {
+        console.log(`🔊 测试金额 ${amount} 的中奖音效`)
+        playWinSoundByAmount(amount)
+      }, index * 4000) // 每4秒测试一个
     })
   }
 
@@ -576,6 +657,14 @@ export function useAudio() {
     playOpenCardSound,
     playWelcomeSound,
     
+    // 🆕 中奖音效 NEW: Winning sound effects
+    playWinningSound,
+    playBigWinSound,
+    playCoinSound,
+    playCelebrationSound,
+    playJackpotSound,
+    playWinSoundByAmount,
+    
     // 游戏结果音效
     playResultSound,
     playOpenCardSequence,
@@ -606,6 +695,7 @@ export function useAudio() {
     resetAudio,
     cleanup,
     debugAudioInfo,
-    testAllSounds
+    testAllSounds,
+    testWinningSoundsByAmount // 🆕 新增测试方法
   }
 }

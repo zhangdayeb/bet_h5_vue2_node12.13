@@ -195,6 +195,16 @@
             :msg="welcomeMsg"
         ></WelcomeMssage>
         
+        <!-- 🆕 中奖弹窗组件 NEW: Winning popup component -->
+        <WinningPopup 
+            :show="showWinningPopup"
+            :amount="winningAmount"
+            :autoClose="true"
+            :autoCloseDelay="5000"
+            @close="handleWinningPopupClose"
+            @playWinSound="handlePlayWinSound"
+        ></WinningPopup>
+        
         <!-- 错误提示消息弹窗 -->
         <div v-if="showErrorMsg" class="error-message-overlay" @click="hideErrorMessage">
             <div class="error-message-panel" @click.stop>
