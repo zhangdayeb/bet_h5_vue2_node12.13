@@ -1,12 +1,12 @@
-// src/views/bjlLh/composables/useAudio.js - 修复版本
-// 解决中奖音效被打断的问题
+// src/views/bjlLh/composables/useAudio.js - 终极修复版本
+// 彻底解决中奖音效冲突问题
 
 import { ref } from 'vue'
 import AudioHandle from '@/common/audioHandle.js'
 import userService from '@/service/userService.js'
 
 /**
- * 修复版音频管理 - 解决中奖音效被打断问题
+ * 终极修复版音频管理 - 彻底解决中奖音效冲突
  */
 export function useAudio() {
   // 音频处理实例
@@ -19,15 +19,15 @@ export function useAudio() {
   const userSettingsLoaded = ref(false)
 
   // ================================
-  // 🆕 中奖音效专用方法（高优先级）
+  // 🔧 关键修复：中奖音效专用方法（高优先级）
   // ================================
 
   /**
-   * 🆕 播放中奖音效（不会被打断）
+   * 🔧 播放中奖音效（不会被打断）
    * @param {string} soundName - 音效文件名
    * @returns {boolean} 是否成功播放
    */
-  const playWinningSound = (soundName = 'betSuccess.mp3') => {
+  const playWinningSound = (soundName = 'betsuccess.mp3') => {
     if (!audioInitialized.value) {
       console.warn('⚠️ 音频系统未初始化，无法播放中奖音效')
       return false
@@ -38,7 +38,7 @@ export function useAudio() {
   }
 
   /**
-   * 🆕 根据中奖金额播放不同的音效序列（不会被打断）
+   * 🔧 根据中奖金额播放不同的音效序列（不会被打断）
    * @param {number} amount - 中奖金额
    */
   const playWinSoundByAmount = (amount) => {
@@ -52,7 +52,7 @@ export function useAudio() {
   }
 
   // ================================
-  // 🔧 修复普通音效方法（会被中奖音效打断）
+  // 🔧 修复：普通音效方法（会被中奖音效打断）
   // ================================
 
   /**
@@ -88,14 +88,14 @@ export function useAudio() {
   const playOpenCardSound = () => playSoundEffect('OPENCARD.mp3')
   const playWelcomeSound = () => playSoundEffect('welcome.wav')
 
-  // 🆕 中奖相关音效（高优先级，不会被打断）
+  // 🔧 中奖相关音效（高优先级，不会被打断）
   const playBigWinSound = () => playWinningSound('bigwin.wav')
   const playCoinSound = () => playWinningSound('coin.wav')
   const playCelebrationSound = () => playWinningSound('celebration.wav')
   const playJackpotSound = () => playWinningSound('jackpot.wav')
 
   // ================================
-  // 游戏音效序列处理
+  // 🔧 关键修复：游戏音效序列处理
   // ================================
 
   /**
@@ -123,7 +123,7 @@ export function useAudio() {
   }
 
   /**
-   * 🔧 修复播放开牌音效序列（避免与中奖音效冲突）
+   * 🔧 关键修复：播放开牌音效序列（彻底避免与中奖音效冲突）
    */
   const playOpenCardSequence = (resultInfo, gameType, bureauNumber) => {
     console.log('🎵 播放开牌音效序列')
@@ -131,26 +131,29 @@ export function useAudio() {
     // 🔧 关键修复：先播放开牌音效
     playOpenCardSound()
     
-    // 🔧 关键修复：延迟播放结果音效，给中奖音效让路
-    setTimeout(() => {
-      // 🆕 检查是否有中奖，如果有中奖则跳过结果音效
-      const hasWinning = resultInfo && resultInfo.money && resultInfo.money > 0
+    // 🔧 关键修复：检查是否有中奖金额
+    const hasWinning = resultInfo && resultInfo.money && resultInfo.money > 0
+    
+    if (hasWinning) {
+      console.log('🎉 检测到中奖金额，开牌音效序列将不播放结果音效')
+      console.log('💰 中奖音效将由 useGameState 统一管理')
       
-      if (hasWinning) {
-        console.log('🎉 检测到中奖，跳过结果音效，优先播放中奖音效')
-        // 🆕 播放中奖音效序列
-        playWinSoundByAmount(resultInfo.money)
-      } else {
-        // 🆕 无中奖时播放结果音效
+      // 🔧 关键修复：不再播放中奖音效，交给 useGameState 处理
+      // 这里只播放开牌音效，不播放任何中奖相关音效
+      
+    } else {
+      // 🔧 无中奖时延迟播放结果音效
+      setTimeout(() => {
         if (resultInfo.result && resultInfo.result.win) {
+          console.log('📝 无中奖，播放普通结果音效')
           playResultSound(resultInfo.result.win, gameType)
         }
-      }
-    }, 1000)
+      }, 1000)
+    }
   }
 
   // ================================
-  // 🆕 音频状态管理和查询
+  // 🔧 修复：音频状态管理和查询
   // ================================
 
   /**
@@ -165,7 +168,7 @@ export function useAudio() {
       soundEffect: musicEffectState.value
     }
 
-    // 🆕 添加中奖音效保护状态
+    // 🔧 添加中奖音效保护状态
     if (audioHandle.value.getAudioStatus) {
       const extendedStatus = audioHandle.value.getAudioStatus()
       return { ...baseStatus, ...extendedStatus }
@@ -175,7 +178,7 @@ export function useAudio() {
   }
 
   /**
-   * 🆕 检查中奖音效是否受保护
+   * 🔧 检查中奖音效是否受保护
    */
   const isWinningAudioProtected = () => {
     if (audioHandle.value.getAudioStatus) {
@@ -185,7 +188,7 @@ export function useAudio() {
   }
 
   /**
-   * 🆕 强制清除中奖音效保护（紧急情况使用）
+   * 🔧 强制清除中奖音效保护（紧急情况使用）
    */
   const clearWinningProtection = () => {
     if (audioHandle.value.clearWinningProtection) {
@@ -195,7 +198,7 @@ export function useAudio() {
   }
 
   /**
-   * 🆕 清空音效队列
+   * 🔧 清空音效队列
    */
   const clearAudioQueue = () => {
     if (audioHandle.value.clearAudioQueue) {
@@ -265,7 +268,7 @@ export function useAudio() {
   }
 
   // ================================
-  // WebSocket远程控制
+  // WebSocket远程控制（保持不变）
   // ================================
 
   const handleRemoteAudioControl = (audioMessage) => {
@@ -315,7 +318,7 @@ export function useAudio() {
   }
 
   // ================================
-  // 初始化方法
+  // 初始化方法（保持不变）
   // ================================
 
   const initAudio = async (audioPath) => {
@@ -352,7 +355,7 @@ export function useAudio() {
   }
 
   // ================================
-  // 背景音乐控制
+  // 背景音乐控制（保持不变）
   // ================================
 
   const startBackgroundMusic = () => {
@@ -386,7 +389,7 @@ export function useAudio() {
   }
 
   // ================================
-  // 设置控制
+  // 设置控制（保持不变）
   // ================================
 
   const setBackgroundMusicState = (state) => {
@@ -421,7 +424,7 @@ export function useAudio() {
   }
 
   // ================================
-  // 工具方法
+  // 工具方法（保持不变）
   // ================================
 
   const isAudioAvailable = () => {
@@ -432,7 +435,6 @@ export function useAudio() {
     console.log('🔇 静音所有音频（包括中奖音效）')
     stopBackgroundMusic()
     stopSoundEffect()
-    // 🆕 强制清除中奖音效保护并静音
     clearWinningProtection()
   }
 
@@ -463,7 +465,7 @@ export function useAudio() {
   }
 
   // ================================
-  // 组合音效序列
+  // 🔧 修复：组合音效序列
   // ================================
 
   const playGameSequence = (sequence, params = {}) => {
@@ -487,6 +489,7 @@ export function useAudio() {
         break
         
       case 'card_opening':
+        // 🔧 关键修复：使用修复后的开牌音效序列
         playOpenCardSequence(params.resultInfo, params.gameType, params.bureauNumber)
         break
         
@@ -494,7 +497,7 @@ export function useAudio() {
         playWelcomeAudio()
         break
         
-      // 🆕 中奖音效序列（高优先级）
+      // 🔧 中奖音效序列（高优先级）- 仅供外部直接调用
       case 'winning_small':
         playCoinSound()
         break
@@ -516,6 +519,8 @@ export function useAudio() {
         break
         
       case 'winning_by_amount':
+        // 🔧 关键修复：这个序列仅供 useGameState 调用
+        console.log('🎵 执行中奖音效序列（仅限 useGameState 调用）')
         playWinSoundByAmount(params.amount || 0)
         break
         
@@ -525,7 +530,7 @@ export function useAudio() {
   }
 
   // ================================
-  // 调试和维护
+  // 调试和维护（保持不变）
   // ================================
 
   const debugAudioInfo = () => {
@@ -558,7 +563,7 @@ export function useAudio() {
     resetAudio()
   }
 
-  // 🆕 测试中奖音效
+  // 🔧 测试中奖音效
   const testWinningSoundsByAmount = () => {
     console.log('🎵 测试不同金额的中奖音效')
     const amounts = [100, 1500, 12000, 55000]
@@ -567,7 +572,7 @@ export function useAudio() {
       setTimeout(() => {
         console.log(`🔊 测试金额 ${amount} 的中奖音效`)
         playWinSoundByAmount(amount)
-      }, index * 6000) // 每6秒测试一个，给中奖音效充足时间
+      }, index * 6000)
     })
   }
 
@@ -593,7 +598,7 @@ export function useAudio() {
     setBackgroundMusicState,
     setMusicEffectState,
     
-    // 🆕 中奖音效（高优先级，不会被打断）
+    // 🔧 中奖音效（高优先级，不会被打断）
     playWinningSound,
     playWinSoundByAmount,
     playBigWinSound,
@@ -613,9 +618,9 @@ export function useAudio() {
     playOpenCardSound,
     playWelcomeSound,
     
-    // 游戏结果音效
+    // 🔧 修复：游戏结果音效
     playResultSound,
-    playOpenCardSequence,
+    playOpenCardSequence, // 🔧 已修复，不再包含中奖音效
     
     // 背景音乐控制
     startBackgroundMusic,
@@ -627,7 +632,7 @@ export function useAudio() {
     toggleBackgroundMusic,
     toggleSoundEffect,
     
-    // 🆕 状态查询和管理
+    // 🔧 状态查询和管理
     getAudioStatus,
     isAudioAvailable,
     getSupportedFormats,
@@ -639,7 +644,7 @@ export function useAudio() {
     muteAll,
     unmuteAll,
     
-    // 组合音效
+    // 🔧 修复：组合音效
     playGameSequence,
     
     // 工具方法
