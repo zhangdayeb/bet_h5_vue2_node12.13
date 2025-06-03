@@ -236,17 +236,21 @@ export default {
       betting.resetForNewRound(gameConfig.betTargetList.value)
     }
 
-    /**
-     * 处理游戏结果 - 已在 gameState 完整处理
-     */
-    const handleGameResult = (resultData) => {
-      if (resultData.processed) {
-        console.log('✅ 开牌结果已完整处理（音效+闪烁+筹码清理）')
-      } else {
-        console.warn('⚠️ 开牌结果未完整处理')
-      }
-    }
-
+/**
+ * 处理游戏结果 - 协调完整清理
+ */
+const handleGameResult = (resultData) => {
+  if (resultData.processed) {
+    console.log('✅ 开牌结果已完整处理（音效+闪烁+筹码清理）')
+    
+    // 🆕 新增：同时清理投注历史数据
+    betting.clearOnGameResult(gameConfig.betTargetList.value)
+    
+    console.log('🧹 投注历史数据已同步清理')
+  } else {
+    console.warn('⚠️ 开牌结果未完整处理')
+  }
+}
     /**
      * 处理中奖金额
      */
@@ -370,27 +374,39 @@ export default {
       }
     }
 
-    /**
-     * 取消按钮 - 简化版：不需要额外参数
-     */
-    const handleCancel = () => {
-      // 智能取消逻辑（调用 betting 模块）
-      const result = betting.cancelBet(
-        gameConfig.betTargetList.value,
-        audio.playCancelSound,  // 取消音效函数
-        audio.playErrorSound    // 错误音效函数
-      )
-      
-      if (result.success) {
-        // 取消/恢复成功
-        errorHandler.showSuccessMessage(result.message, 2500)
-        console.log('✅ 取消操作成功:', result)
-      } else {
-        // 取消失败
-        errorHandler.showLocalError(result.error)
-        console.warn('⚠️ 取消操作失败:', result)
-      }
+/**
+ * 取消按钮 - 传入游戏状态用于判断开牌情况
+ */
+const handleCancel = () => {
+  // 智能取消逻辑（调用 betting 模块，传入游戏状态）
+  const result = betting.cancelBet(
+    gameConfig.betTargetList.value,
+    gameState,  // 🆕 新增：传入完整的游戏状态
+    audio.playCancelSound,  // 取消音效函数
+    audio.playErrorSound    // 错误音效函数
+  )
+  
+  if (result.success) {
+    // 根据操作类型显示不同的提示消息
+    if (result.isClearing) {
+      // 清场操作
+      errorHandler.showSuccessMessage('清场完成，所有投注已清除', 2500)
+      console.log('✅ 清场操作成功:', result)
+    } else if (result.isRestoring) {
+      // 恢复操作
+      errorHandler.showSuccessMessage(result.message, 2500)
+      console.log('✅ 恢复操作成功:', result)
+    } else {
+      // 普通取消操作
+      errorHandler.showSuccessMessage(result.message, 2500)
+      console.log('✅ 取消操作成功:', result)
     }
+  } else {
+    // 取消失败
+    errorHandler.showLocalError(result.error)
+    console.warn('⚠️ 取消操作失败:', result)
+  }
+}
 
     /**
      * 设置免佣 - 薄包装
