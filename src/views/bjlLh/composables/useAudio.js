@@ -230,11 +230,11 @@ export function useAudio() {
   const playWelcomeSound = () => playSoundEffect('welcome.wav')
 
   // 🆕 新增中奖相关音效 NEW: Winning related sound effects
-  const playWinningSound = () => playSoundEffect('win.mp3')           // 中奖音效
-  const playBigWinSound = () => playSoundEffect('bigwin.mp3')         // 大奖音效
+  const playWinningSound = () => playSoundEffect('win.wav')           // 中奖音效
+  const playBigWinSound = () => playSoundEffect('bigwin.wav')         // 大奖音效
   const playCoinSound = () => playSoundEffect('coin.wav')             // 金币音效
-  const playCelebrationSound = () => playSoundEffect('celebration.mp3') // 庆祝音效
-  const playJackpotSound = () => playSoundEffect('jackpot.mp3')        // 累积奖音效
+  const playCelebrationSound = () => playSoundEffect('celebration.wav') // 庆祝音效
+  const playJackpotSound = () => playSoundEffect('jackpot.wav')        // 累积奖音效
 
   /**
    * 🆕 根据中奖金额播放不同的音效
