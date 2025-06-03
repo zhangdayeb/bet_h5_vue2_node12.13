@@ -1,6 +1,6 @@
 <template>
   <div v-if="show" class="winning-popup-overlay" @click="handleClose">
-    <div class="winning-popup-container" @click.stop>
+    <div class="winning-popup-container" @click="handleClose">
       <!-- 背景光效 -->
       <div class="winning-background-effect"></div>
       
@@ -9,7 +9,7 @@
         <!-- 庆祝标题 -->
         <div class="winning-title">
           <h1 class="winning-text">🎉 恭喜中奖！</h1>
-          <div class="winning-subtitle">{{'恭喜您获得奖金' }}</div>
+          <div class="winning-subtitle">恭喜您获得奖金</div>
         </div>
         
         <!-- 中奖金额显示 -->
@@ -42,13 +42,6 @@
           >
             ⭐
           </div>
-        </div>
-        
-        <!-- 关闭按钮 -->
-        <div class="winning-actions">
-          <button class="winning-close-btn" @click="handleClose">
-            {{ $t('chips.ok') || '确定' }}
-          </button>
         </div>
       </div>
       
@@ -132,11 +125,11 @@ export default {
     },
     
     /**
-     * 生成金币动画
+     * 生成金币动画 - 🔧 减少数量
      */
     generateCoins() {
       this.coins = []
-      const coinCount = 8
+      const coinCount = 5 // 🔧 从8减少到5
       
       for (let i = 0; i < coinCount; i++) {
         const coin = {
@@ -155,11 +148,11 @@ export default {
     },
     
     /**
-     * 生成星星动画
+     * 生成星星动画 - 🔧 减少数量
      */
     generateStars() {
       this.stars = []
-      const starCount = 6
+      const starCount = 4 // 🔧 从6减少到4
       
       for (let i = 0; i < starCount; i++) {
         const star = {
@@ -176,11 +169,11 @@ export default {
     },
     
     /**
-     * 生成彩带效果
+     * 生成彩带效果 - 🔧 减少数量
      */
     generateConfetti() {
       this.confettiPieces = []
-      const confettiCount = 12
+      const confettiCount = 8 // 🔧 从12减少到8
       const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7']
       
       for (let i = 0; i < confettiCount; i++) {
@@ -246,7 +239,7 @@ export default {
 
 <style lang="less" scoped>
 /* ================================
-   中奖弹窗主容器 - 修复版本
+   中奖弹窗主容器 - 🔧 高度压缩版 + 去掉按钮
    ================================ */
 .winning-popup-overlay {
   position: fixed;
@@ -254,35 +247,38 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85); /* 更深的背景 */
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  backdrop-filter: blur(8px); /* 增强模糊效果 */
+  backdrop-filter: blur(8px);
   animation: overlayFadeIn 0.3s ease-out;
 }
 
 .winning-popup-container {
   position: relative;
-  /* 🔧 修复主色调：深金色到亮金色的渐变，增强对比 */
   background: linear-gradient(135deg, #b8860b 0%, #ffd700 30%, #ffed4e 70%, #ffd700 100%);
-  border: 3px solid #8b6914; /* 深金色边框增强对比 */
-  border-radius: 20px;
-  padding: 40px 30px;
-  min-width: 350px;
+  border: 3px solid #8b6914;
+  border-radius: 10px;
+  padding: 10px 20px; /* 🔧 根据你的调整：减少padding */
+  min-width: 320px;
   max-width: 90vw;
   text-align: center;
   box-shadow: 
-    0 25px 80px rgba(184, 134, 11, 0.6), /* 深金色阴影 */
-    0 0 0 4px rgba(139, 105, 20, 0.3), /* 深金色外边框 */
-    inset 0 2px 0 rgba(255, 255, 255, 0.4); /* 内发光 */
+    0 12px 40px rgba(184, 134, 11, 0.6),
+    0 0 0 4px rgba(139, 105, 20, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
   animation: popupSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  /* 🔧 根据你的优化：增加max-height */
+  max-height: 160px; /* 🔧 从140px调整为120px，比100px大一些 */
 }
 
 /* ================================
-   背景光效 - 修复版本
+   背景光效 - 保持不变
    ================================ */
 .winning-background-effect {
   position: absolute;
@@ -295,7 +291,7 @@ export default {
 }
 
 /* ================================
-   内容区域 - 修复版本
+   内容区域 - 🔧 压缩间距
    ================================ */
 .winning-content {
   position: relative;
@@ -303,48 +299,44 @@ export default {
 }
 
 .winning-title {
-  margin-bottom: 30px;
+  margin-bottom: 8px; /* 🔧 从10px压缩到8px */
 }
 
 .winning-text {
-  font-size: 28px;
+  font-size: 20px; /* 🔧 从22px压缩到20px */
   font-weight: bold;
-  /* 🔧 修复标题颜色：深棕色增强对比 */
   color: #654321;
   text-shadow: 
     2px 2px 4px rgba(0, 0, 0, 0.4),
-    0 0 8px rgba(255, 255, 255, 0.3); /* 白色光晕 */
-  margin: 0 0 10px 0;
+    0 0 8px rgba(255, 255, 255, 0.3);
+  margin: 0 0 3px 0; /* 🔧 从4px压缩到3px */
   animation: titleBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .winning-subtitle {
-  font-size: 16px;
-  /* 🔧 修复副标题颜色：深棕色 */
+  font-size: 13px; /* 🔧 从14px压缩到13px */
   color: #8b4513;
   font-weight: 600;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* ================================
-   中奖金额显示 - 修复版本
+   中奖金额显示 - 🔧 大幅压缩
    ================================ */
 .winning-amount-section {
-  margin: 30px 0;
-  padding: 25px;
-  /* 🔧 修复金额区域背景：深色半透明增强对比 */
-  background: rgba(139, 69, 19, 0.15); /* 深棕色半透明 */
-  border: 2px solid rgba(139, 105, 20, 0.4); /* 深金色边框 */
-  border-radius: 15px;
+  margin: 8px 15px; /* 🔧 左右增加边距：从8px 0改为8px 15px */
+  padding: 10px; /* 🔧 从12px压缩到10px */
+  background: rgba(139, 69, 19, 0.15);
+  border: 2px solid rgba(139, 105, 20, 0.4);
+  border-radius: 8px; /* 🔧 从10px压缩到8px */
   backdrop-filter: blur(10px);
   box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .winning-amount-label {
-  font-size: 14px;
-  /* 🔧 修复标签颜色：深棕色 */
+  font-size: 11px; /* 🔧 从12px压缩到11px */
   color: #654321;
-  margin-bottom: 10px;
+  margin-bottom: 3px; /* 🔧 从4px压缩到3px */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -354,30 +346,28 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 5px; /* 🔧 从6px压缩到5px */
 }
 
 .currency-symbol {
-  font-size: 28px;
-  /* 🔧 修复货币符号颜色：深金色 */
+  font-size: 20px; /* 🔧 从22px压缩到20px */
   color: #b8860b;
   font-weight: bold;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .amount-number {
-  font-size: 42px;
+  font-size: 30px; /* 🔧 从32px压缩到30px */
   font-weight: bold;
-  /* 🔧 修复金额数字颜色：深金色 */
   color: #b8860b;
   text-shadow: 
     3px 3px 6px rgba(0, 0, 0, 0.4),
-    0 0 12px rgba(255, 255, 255, 0.2); /* 白色光晕 */
+    0 0 12px rgba(255, 255, 255, 0.2);
   animation: amountPulse 1.2s ease-in-out infinite;
 }
 
 /* ================================
-   装饰动画元素
+   装饰动画元素 - 保持不变
    ================================ */
 .winning-decorations {
   position: absolute;
@@ -391,7 +381,7 @@ export default {
 
 .floating-coin {
   position: absolute;
-  font-size: 24px;
+  font-size: 20px; /* 🔧 从24px压缩到20px */
   animation: coinFloat var(--duration, 2s) ease-in-out var(--delay, 0s) infinite;
   left: var(--start-x, 50%);
   top: var(--start-y, 50%);
@@ -400,7 +390,7 @@ export default {
 
 .floating-star {
   position: absolute;
-  font-size: 20px;
+  font-size: 16px; /* 🔧 从20px压缩到16px */
   animation: starTwinkle var(--duration, 1.5s) ease-in-out var(--delay, 0s) infinite;
   left: var(--start-x, 50%);
   top: var(--start-y, 50%);
@@ -409,7 +399,7 @@ export default {
 }
 
 /* ================================
-   彩带效果
+   彩带效果 - 保持不变
    ================================ */
 .confetti-container {
   position: absolute;
@@ -431,42 +421,18 @@ export default {
 }
 
 /* ================================
-   操作按钮 - 修复版本
+   🆕 添加点击提示效果 (替代按钮功能)
    ================================ */
-.winning-actions {
-  margin-top: 35px;
+.winning-popup-container:hover {
+  transform: scale(1.02);
+  box-shadow: 
+    0 15px 50px rgba(184, 134, 11, 0.7),
+    0 0 0 4px rgba(139, 105, 20, 0.4),
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
 }
 
-.winning-close-btn {
-  /* 🔧 修复按钮颜色：深金色到深棕色渐变 */
-  background: linear-gradient(135deg, #b8860b 0%, #8b6914 50%, #654321 100%);
-  border: 2px solid #654321; /* 深棕色边框 */
-  color: #fff; /* 白色文字确保对比 */
-  padding: 14px 35px;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 
-    0 6px 20px rgba(101, 67, 33, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2); /* 内发光 */
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-  
-  &:hover {
-    background: linear-gradient(135deg, #8b6914 0%, #654321 50%, #4a2c17 100%);
-    transform: translateY(-3px);
-    box-shadow: 
-      0 8px 25px rgba(101, 67, 33, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  }
-  
-  &:active {
-    transform: translateY(-1px);
-    box-shadow: 
-      0 4px 15px rgba(101, 67, 33, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  }
+.winning-popup-container:active {
+  transform: scale(0.98);
 }
 
 /* ================================
@@ -509,7 +475,7 @@ export default {
   }
 }
 
-/* 金额脉搏动画 - 修复版本 */
+/* 金额脉搏动画 */
 @keyframes amountPulse {
   0%, 100% {
     transform: scale(1);
@@ -518,7 +484,7 @@ export default {
       0 0 12px rgba(255, 255, 255, 0.2);
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.06); /* 🔧 从1.08减少到1.06 */
     text-shadow: 
       3px 3px 8px rgba(0, 0, 0, 0.5),
       0 0 16px rgba(255, 255, 255, 0.3);
@@ -586,33 +552,14 @@ export default {
 }
 
 /* ================================
-   响应式设计
+   响应式设计 - 🔧 高度优化版，去掉按钮
    ================================ */
 @media (max-width: 768px) {
   .winning-popup-container {
-    margin: 20px;
-    padding: 30px 20px;
+    margin: 10px;
+    padding: 8px 20px; /* 🔧 根据你的调整：进一步减少padding */
     min-width: 300px;
-  }
-  
-  .winning-text {
-    font-size: 24px;
-  }
-  
-  .amount-number {
-    font-size: 32px;
-  }
-  
-  .currency-symbol {
-    font-size: 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .winning-popup-container {
-    margin: 15px;
-    padding: 25px 15px;
-    min-width: 280px;
+    max-height: 160px; /* 🔧 从120px调整为110px */
   }
   
   .winning-text {
@@ -623,41 +570,112 @@ export default {
     font-size: 28px;
   }
   
-  .floating-coin {
+  .currency-symbol {
     font-size: 20px;
   }
+}
+
+@media (max-width: 480px) {
+  .winning-popup-container {
+    margin: 8px;
+    padding: 8px 15px; /* 🔧 根据你的调整：统一使用8px */
+    min-width: 280px;
+    max-height: 160px; /* 🔧 小屏幕保持100px */
+  }
   
-  .floating-star {
+  .winning-title {
+    margin-bottom: 6px; /* 🔧 进一步压缩 */
+  }
+  
+  .winning-text {
+    font-size: 18px;
+    margin: 0 0 2px 0; /* 🔧 进一步压缩 */
+  }
+  
+  .winning-subtitle {
+    font-size: 12px;
+  }
+  
+  .winning-amount-section {
+    margin: 6px 12px; /* 🔧 移动端也增加左右边距 */
+    padding: 8px; /* 🔧 进一步压缩 */
+  }
+  
+  .amount-number {
+    font-size: 24px;
+  }
+  
+  .currency-symbol {
+    font-size: 18px;
+  }
+  
+  .floating-coin {
     font-size: 16px;
   }
   
-  .winning-close-btn {
-    padding: 12px 28px;
-    font-size: 15px;
+  .floating-star {
+    font-size: 14px;
+  }
+}
+
+/* 🔧 新增：极低高度屏幕的特殊处理 */
+@media (max-height: 400px) {
+  .winning-popup-container {
+    padding: 8px 20px; /* 🔧 根据你的调整：使用8px */
+    min-width: 280px;
+    max-height: 160px; /* 🔧 从100px调整为90px，避免过小 */
+    border-radius: 8px;
+  }
+  
+  .winning-title {
+    margin-bottom: 5px; /* 🔧 极度压缩 */
+  }
+  
+  .winning-text {
+    font-size: 16px; /* 🔧 极度压缩 */
+    margin: 0 0 2px 0;
+  }
+  
+  .winning-subtitle {
+    font-size: 11px;
+  }
+  
+  .winning-amount-section {
+    margin: 5px 10px; /* 🔧 极低屏幕也保持左右边距 */
+    padding: 6px; /* 🔧 极度压缩 */
+  }
+  
+  .winning-amount-label {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+  
+  .amount-number {
+    font-size: 20px; /* 🔧 极度压缩 */
+  }
+  
+  .currency-symbol {
+    font-size: 16px;
   }
 }
 
 @media (min-width: 1024px) {
   .winning-popup-container {
-    min-width: 400px;
-    padding: 45px 35px;
+    min-width: 350px;
+    padding: 12px 25px; /* 🔧 根据你的调整：大屏幕适度放宽 */
+    max-height: 160px; /* 🔧 大屏幕稍微增加高度 */
   }
   
   .winning-text {
-    font-size: 32px;
+    font-size: 24px; /* 🔧 适中放大 */
   }
   
   .amount-number {
-    font-size: 48px;
+    font-size: 34px; /* 🔧 适中放大 */
   }
   
   .currency-symbol {
-    font-size: 32px;
-  }
-  
-  .winning-close-btn {
-    padding: 16px 40px;
-    font-size: 17px;
+    font-size: 24px; /* 🔧 适中放大 */
   }
 }
 </style>
