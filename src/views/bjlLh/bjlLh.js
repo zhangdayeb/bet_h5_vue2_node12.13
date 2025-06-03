@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 import SelectChip from '@/components/SelectChip'
 import BetBtnsXc from '@/components/BtnsXc'
 import WelcomeMssage from '@/components/Welcome.vue'
-import WinningPopup from '@/components/WinningPopup.vue' // 🆕 新增：中奖弹窗组件
+import WinningPopup from '@/components/WinningPopup.vue'
 
 // 服务导入
 import userService from '@/service/userService.js'
@@ -30,7 +30,7 @@ export default {
     SelectChip,
     BetBtnsXc,
     WelcomeMssage,
-    WinningPopup // 🆕 新增：注册中奖弹窗组件
+    WinningPopup
   },
 
   setup() {
@@ -125,7 +125,6 @@ export default {
         // 4. 关键依赖注入 - 将音频管理器注入到 gameState
         console.log('🔗 注入依赖关系')
         gameState.setAudioManager(audio)
-        gameState.setErrorHandler(errorHandler)
         
         // 5. 建立WebSocket连接
         console.log('🔌 建立WebSocket连接')
@@ -249,8 +248,7 @@ export default {
     }
 
     /**
-     * 🆕 处理中奖金额 - 新增处理函数
-     * Handle winning amount - New processing function
+     * 处理中奖金额
      */
     const handleWinningAmount = (winningData) => {
       console.log('💰 中奖金额处理结果:', winningData)
@@ -372,27 +370,27 @@ export default {
       }
     }
 
-/**
- * 取消按钮 - 简化版：不需要额外参数
- */
-const handleCancel = () => {
-  // 智能取消逻辑（调用 betting 模块）
-  const result = betting.cancelBet(
-    gameConfig.betTargetList.value,
-    audio.playCancelSound,  // 取消音效函数
-    audio.playErrorSound    // 错误音效函数
-  )
-  
-  if (result.success) {
-    // 取消/恢复成功
-    errorHandler.showSuccessMessage(result.message, 2500)
-    console.log('✅ 取消操作成功:', result)
-  } else {
-    // 取消失败
-    errorHandler.showLocalError(result.error)
-    console.warn('⚠️ 取消操作失败:', result)
-  }
-}
+    /**
+     * 取消按钮 - 简化版：不需要额外参数
+     */
+    const handleCancel = () => {
+      // 智能取消逻辑（调用 betting 模块）
+      const result = betting.cancelBet(
+        gameConfig.betTargetList.value,
+        audio.playCancelSound,  // 取消音效函数
+        audio.playErrorSound    // 错误音效函数
+      )
+      
+      if (result.success) {
+        // 取消/恢复成功
+        errorHandler.showSuccessMessage(result.message, 2500)
+        console.log('✅ 取消操作成功:', result)
+      } else {
+        // 取消失败
+        errorHandler.showLocalError(result.error)
+        console.warn('⚠️ 取消操作失败:', result)
+      }
+    }
 
     /**
      * 设置免佣 - 薄包装
@@ -444,12 +442,11 @@ const handleCancel = () => {
     }
 
     // ================================
-    // 🆕 功能6: 中奖弹窗事件处理 NEW: Winning Popup Event Handling
+    // 功能6: 中奖弹窗事件处理
     // ================================
 
     /**
      * 处理中奖弹窗关闭事件
-     * Handle winning popup close event
      */
     const handleWinningPopupClose = () => {
       console.log('🎉 用户关闭中奖弹窗')
@@ -458,7 +455,6 @@ const handleCancel = () => {
 
     /**
      * 处理中奖音效播放请求
-     * Handle winning sound play request
      */
     const handlePlayWinSound = () => {
       console.log('🎵 中奖弹窗请求播放音效')
@@ -493,27 +489,9 @@ const handleCancel = () => {
       console.log('💀 组件销毁，清理资源')
       socket.cleanup()
       errorHandler.cleanup()
-      gameState.cleanup() // 🆕 新增：清理游戏状态（包括中奖弹窗）
+      gameState.cleanup()
       audio.muteAll()
     })
-
-    // ================================
-    // 调试工具（开发环境）
-    // ================================
-
-    const showConnectionStats = () => {
-      if (isDevelopment.value) {
-        socket.showConnectionStats()
-        console.group('=== 所有模块调试信息 ===')
-        gameState.debugInfo()
-        betting.debugBettingInfo()
-        chips.debugChipInfo()
-        exempt.debugExemptInfo()
-        audio.debugAudioInfo()
-        errorHandler.debugErrorInfo()
-        console.groupEnd()
-      }
-    }
 
     // ================================
     // 返回给模板的数据和方法
@@ -535,7 +513,7 @@ const handleCancel = () => {
       tableRunInfo: gameState.tableRunInfo,
       bureauNumber: gameState.bureauNumber,
       
-      // 🆕 中奖弹窗状态 - 直接从模块导出 NEW: Winning popup state - directly from module
+      // 中奖弹窗状态 - 直接从模块导出
       showWinningPopup: gameState.showWinningPopup,
       winningAmount: gameState.winningAmount,
       
@@ -577,15 +555,12 @@ const handleCancel = () => {
       closeMsg,
       hideErrorMessage: errorHandler.hideErrorMessage,
       
-      // 🆕 中奖弹窗接口 NEW: Winning popup interface
+      // 中奖弹窗接口
       handleWinningPopupClose,
       handlePlayWinSound,
       
       // 连接管理接口
-      manualReconnect,
-      
-      // 调试工具（开发环境）
-      showConnectionStats
+      manualReconnect
     }
   }
 }
