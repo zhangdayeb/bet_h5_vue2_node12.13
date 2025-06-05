@@ -1,5 +1,5 @@
 // src/views/bjlLh/bjlLh.js
-// 新版本 - 调度员版本：只做协调和接口，具体业务由各模块完成 - 集成中奖弹窗
+// 修复版调度员 - 简化取消逻辑，注册清理回调
 
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
@@ -122,16 +122,23 @@ export default {
           chips.initChips()
         }
         
-        // 4. 关键依赖注入 - 将音频管理器注入到 gameState
+        // 4. 关键依赖注入
         console.log('🔗 注入依赖关系')
         gameState.setAudioManager(audio)
         
-        // 5. 建立WebSocket连接
+        // 🆕 5. 注册开牌后清理回调
+        console.log('📋 注册开牌后清理回调')
+        gameState.registerCleanupCallback((betTargetList) => {
+          console.log('🎯 执行开牌后投注数据清理')
+          betting.clearAfterGameResult(betTargetList)
+        })
+        
+        // 6. 建立WebSocket连接
         console.log('🔌 建立WebSocket连接')
         setupSocketEventHandlers()
         await socket.initSocket(gameType, tableId, userId)
         
-        // 6. 显示欢迎消息
+        // 7. 显示欢迎消息
         showWelcomeMessage()
         
         console.log('✅ 应用初始化完成')
@@ -144,10 +151,9 @@ export default {
     }
 
     /**
-     * 显示欢迎消息 - 调度员直接处理欢迎消息内容判断
+     * 显示欢迎消息
      */
     const showWelcomeMessage = () => {
-      // 直接根据游戏类型判断欢迎消息键，无需依赖配置模块
       const welcomeKey = gameConfig.gameType.value == 3 ? 'bjlAndLh.welcomeBjl' : 'bjlAndLh.welcomeLh'
       
       console.log('🎉 显示欢迎消息:', {
@@ -183,10 +189,11 @@ export default {
         if(result.code == 205){
           audio.handleRemoteAudioControl(result)
         }
-        // 调用 gameState 完整处理消息（包含音效、闪烁、倒计时、中奖弹窗）
+        
+        // 调用 gameState 完整处理消息（包含音效、闪烁、倒计时、中奖弹窗、清理调度）
         const processResult = gameState.processGameMessage(
           result,
-          gameConfig,  // ✅ 正确：直接传递 gameConfig（不是 gameConfig.gameConfig）
+          gameConfig,  // 传递游戏配置
           gameConfig.gameType.value
         )
         
@@ -232,26 +239,22 @@ export default {
      */
     const handleNewRound = (roundInfo) => {
       console.log('🆕 新局开始，协调清理')
-      
-      // 调用 betting 模块清理（gameState 内部已清理闪烁）
       betting.resetForNewRound(gameConfig.betTargetList.value)
     }
 
-/**
- * 处理游戏结果 - 协调完整清理
- */
-const handleGameResult = (resultData) => {
-  if (resultData.processed) {
-    console.log('✅ 开牌结果已完整处理（音效+闪烁+筹码清理）')
-    
-    // 🆕 新增：同时清理投注历史数据
-    betting.clearOnGameResult(gameConfig.betTargetList.value)
-    
-    console.log('🧹 投注历史数据已同步清理')
-  } else {
-    console.warn('⚠️ 开牌结果未完整处理')
-  }
-}
+    /**
+     * 🔧 修复：处理游戏结果 - 简化处理
+     */
+    const handleGameResult = (resultData) => {
+      if (resultData.processed) {
+        console.log('✅ 开牌结果已完整处理（音效+闪烁+清理调度）')
+        // 🔧 修复：不再手动调用清理，由 gameState 的清理回调自动处理
+        console.log('🎯 开牌后清理将由回调自动执行')
+      } else {
+        console.warn('⚠️ 开牌结果未完整处理')
+      }
+    }
+
     /**
      * 处理中奖金额
      */
@@ -268,7 +271,7 @@ const handleGameResult = (resultData) => {
     }
 
     /**
-     * 处理桌台更新 - 已在 gameState 完整处理
+     * 处理桌台更新
      */
     const handleTableUpdate = (updateInfo) => {
       console.log('📊 桌台信息已更新（倒计时+音效已自动处理）')
@@ -298,14 +301,13 @@ const handleGameResult = (resultData) => {
     }
 
     // ================================
-    // 功能3: Vue组件接口层（薄包装）- 修复音频传递
+    // 功能3: Vue组件接口层（薄包装）
     // ================================
 
     /**
-     * 投注区域点击 - 修复：传递具体音频函数
+     * 投注区域点击
      */
     const bet = (target) => {
-      // 权限检查（调用 betting 模块）
       const checkResult = betting.canPlaceBet(
         gameState.tableRunInfo,
         chips, 
@@ -313,13 +315,12 @@ const handleGameResult = (resultData) => {
       )
       
       if (checkResult.canClick) {
-        // 执行下注（调用 betting 模块，传递具体音频函数）
         const result = betting.executeClickBet(
           target,
           chips.currentChip.value,
           gameConfig.betTargetList.value,
           chips.conversionChip,
-          audio.playBetSound  // 修复：传递具体的音频函数
+          audio.playBetSound
         )
         
         if (!result.success) {
@@ -331,11 +332,10 @@ const handleGameResult = (resultData) => {
     }
 
     /**
-     * 确认按钮 - 修复：传递具体音频函数 + 增加成功提示
+     * 确认按钮
      */
     const betOrder = async () => {
       try {
-        // 智能确认逻辑（调用 betting 模块，传递具体音频函数）
         const result = await betting.confirmBet(
           gameConfig.betTargetList.value,
           {
@@ -343,15 +343,11 @@ const handleGameResult = (resultData) => {
             tableId: gameConfig.tableId.value
           },
           exempt.Freebool.value,
-          audio.playBetSuccessSound,  // 修复：传递确认成功音效函数
-          audio.playTipSound          // 修复：传递提示音效函数
+          audio.playBetSuccessSound,
+          audio.playTipSound
         )
         
-        // 处理投注结果
         if (result.success) {
-          // ================================
-          // 投注成功提示
-          // ================================
           const successMessage = `投注成功！共${result.betsCount}注，总金额 ${result.amount}`
           console.log('✅ 投注成功:', {
             betsCount: result.betsCount,
@@ -359,15 +355,11 @@ const handleGameResult = (resultData) => {
             message: successMessage
           })
           
-          // 显示成功提示消息
           errorHandler.showSuccessMessage(successMessage, 2000)
           
         } else if (!result.noApiCall) {
-          // 投注失败（非重复提交的情况）
           errorHandler.showLocalError(result.error)
         }
-        // 注意：result.noApiCall = true 的情况（重复提交）不显示错误，
-        // 因为 betting 模块内部已经播放了提示音效
         
       } catch (error) {
         console.error('❌ 确认下注失败:', error)
@@ -375,42 +367,37 @@ const handleGameResult = (resultData) => {
       }
     }
 
-/**
- * 取消按钮 - 传入游戏状态用于判断开牌情况
- */
-const handleCancel = () => {
-  // 智能取消逻辑（调用 betting 模块，传入游戏状态）
-  const result = betting.cancelBet(
-    gameConfig.betTargetList.value,
-    gameState,  // 🆕 新增：传入完整的游戏状态
-    audio.playCancelSound,  // 取消音效函数
-    audio.playErrorSound    // 错误音效函数
-  )
-  
-  if (result.success) {
-    // 根据操作类型显示不同的提示消息
-    if (result.isClearing) {
-      // 清场操作
-      errorHandler.showSuccessMessage('清场完成，所有投注已清除', 2500)
-      console.log('✅ 清场操作成功:', result)
-    } else if (result.isRestoring) {
-      // 恢复操作
-      errorHandler.showSuccessMessage(result.message, 2500)
-      console.log('✅ 恢复操作成功:', result)
-    } else {
-      // 普通取消操作
-      errorHandler.showSuccessMessage(result.message, 2500)
-      console.log('✅ 取消操作成功:', result)
+    /**
+     * 🔧 修复：取消按钮 - 简化调用
+     */
+    const handleCancel = () => {
+      console.log('🎯 用户点击取消按钮')
+      
+      // 🔧 修复：简化调用，只传递必要参数
+      const result = betting.cancelBet(
+        gameConfig.betTargetList.value,
+        gameState,  // 保留传递，但 betting 内部不用于复杂判断
+        audio.playCancelSound,
+        audio.playErrorSound
+      )
+      
+      if (result.success) {
+        // 根据操作类型显示不同的提示消息
+        if (result.type === 'restore') {
+          errorHandler.showSuccessMessage('已恢复到提交状态', 2500)
+          console.log('✅ 恢复操作成功:', result)
+        } else if (result.type === 'clear') {
+          errorHandler.showSuccessMessage('已清空所有投注', 2500)
+          console.log('✅ 清空操作成功:', result)
+        }
+      } else {
+        errorHandler.showLocalError(result.error)
+        console.warn('⚠️ 取消操作失败:', result)
+      }
     }
-  } else {
-    // 取消失败
-    errorHandler.showLocalError(result.error)
-    console.warn('⚠️ 取消操作失败:', result)
-  }
-}
 
     /**
-     * 设置免佣 - 薄包装
+     * 设置免佣
      */
     const setFree = () => {
       if(gameState.tableRunInfo.end_time > 0){
@@ -500,7 +487,6 @@ const handleCancel = () => {
       await initializeApp()
       // 确保投注区域干净
       gameConfig.clearAllBetAreas()
-
     })
 
     onBeforeUnmount(() => {
@@ -560,7 +546,7 @@ const handleCancel = () => {
       // Vue组件接口 - 薄包装函数
       bet,
       betOrder,
-      handleCancel,
+      handleCancel,  // 🔧 修复后的简化版本
       setFree,
       
       // 筹码管理接口
