@@ -32,7 +32,7 @@
                 <div class="bet-row bet-row-special">
                     <div 
                         :class="[target.className, target.flashClass, 'bet-area']" 
-                        v-for="(target, targetIndex) in betTargetList.slice(5, 12)"
+                        v-for="(target, targetIndex) in betTargetList.slice(3, 8)"
                         :key="'special-' + targetIndex" 
                         @click="bet(target)"
                     >
@@ -65,7 +65,7 @@
                 <div class="bet-row bet-row-basic">
                     <div 
                         :class="[target.className, target.flashClass, 'bet-area']" 
-                        v-for="(target, targetIndex) in betTargetList.slice(0, 5)"
+                        v-for="(target, targetIndex) in betTargetList.slice(0, 3)"
                         :key="'basic-' + targetIndex" 
                         @click="bet(target)"
                     >

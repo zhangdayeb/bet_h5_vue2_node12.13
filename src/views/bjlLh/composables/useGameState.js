@@ -73,6 +73,7 @@ export function useGameState() {
    * @returns {boolean} 是否播放成功
    */
   const playWinningAudioSafely = (amount, roundId = '') => {
+    console.log('🎯 收到开牌结果:播放音效播放')
     // 🔧 关键修复：检查是否已经播放过本局的中奖音效
     const currentRoundKey = `${roundId}_${amount}`
     
@@ -138,6 +139,7 @@ export function useGameState() {
    * 🔧 修复：显示中奖弹窗（不再直接播放音效）
    */
   const showWinningDisplay = (amount, roundId = '') => {
+    console.log('🎯 收到开牌结果:展示弹窗')
     // 验证中奖金额
     const winAmount = Number(amount)
     if (!winAmount || winAmount <= 0) {
@@ -200,7 +202,7 @@ export function useGameState() {
       return false
     }
 
-    clearFlashEffect(betTargetList)
+    // clearFlashEffect(betTargetList)
 
     if (!flashIds || flashIds.length === 0) {
       console.log('📝 无闪烁区域')
@@ -238,14 +240,19 @@ export function useGameState() {
    * 清除闪烁效果
    */
   const clearFlashEffect = (betTargetList = null) => {
-    console.log('🧹 清除闪烁效果:', flashingAreas.value)
+    console.log('🎯 收到开牌结果:清除闪烁 + 投注区域')
 
     if (flashTimer.value) {
       clearTimeout(flashTimer.value)
       flashTimer.value = null
     }
 
+      // ================================
+      // 1 清理闪烁
+      // ================================
+    console.log('🎯 收到开牌结果:清除闪烁')
     if (betTargetList && betTargetList.length > 0) {
+      console.log('🎯 收到开牌结果:清除闪烁-开始')
       flashingAreas.value.forEach(areaId => {
         const item = betTargetList.find(target => target.id === areaId)
         if (item) {
@@ -253,9 +260,40 @@ export function useGameState() {
           console.log('🧹 清除闪烁:', item.label, item.id)
         }
       })
+    }else{
+      console.log('🎯 收到开牌结果:清除闪烁-无闪烁 跳过')
     }
-
     flashingAreas.value = []
+
+      // ================================
+      // 2 清理投注区域筹码显示
+      // ================================
+      console.log('🎯 收到开牌结果:清除投注')
+      if (betTargetList && Array.isArray(betTargetList) && betTargetList.length > 0) {
+        console.log('🎯 收到开牌结果:清除投注-开始')
+        let clearedAreasCount = 0
+        let totalClearedAmount = 0
+        
+        betTargetList.forEach((item, index) => {
+          if (item && (item.betAmount > 0 || item.showChip.length > 0)) {
+            totalClearedAmount += item.betAmount || 0
+            clearedAreasCount++
+            
+            item.betAmount = 0
+            item.showChip = []
+          }
+        })
+        
+        console.log(`✅ 筹码清理完成`, {
+          clearedAreas: clearedAreasCount,
+          totalClearedAmount: totalClearedAmount,
+          totalAreas: betTargetList.length
+        })
+      } else {
+        console.log('🎯 收到开牌结果:清除投注-投注区域列表无效，跳过筹码清理')
+      }
+
+    
   }
 
   // ================================
@@ -293,7 +331,8 @@ export function useGameState() {
     const flashIds = resultData.pai_flash || []
     const resultBureauNumber = gameResult.data.bureau_number
 
-    console.log('🎯 收到开牌结果:', {
+    console.log('🎯 收到开牌结果:处理闪烁', {
+      betTargetList,
       resultBureauNumber,
       currentBureauNumber: bureauNumber.value,
       flashIds,
@@ -304,89 +343,35 @@ export function useGameState() {
     const isNewRound = bureauNumber.value !== resultBureauNumber
     
     if (isNewRound) {
+      // 闪烁 
       console.log('🆕 新的一局开始:', resultBureauNumber, '上一局:', bureauNumber.value)
       bureauNumber.value = resultBureauNumber
-      
       // 🔧 新局重置闪烁状态和音效状态
       currentGameFlashed.value = false
       winningAudioPlayed.value = false // 🔧 重置中奖音效状态
+
+      // ================================
+      // 🔧 1 设置闪烁
+      // ================================
       
       if (flashTimer.value) {
         clearTimeout(flashTimer.value)
         flashTimer.value = null
         console.log('🧹 清理上一局的闪烁定时器')
       }
-      flashingAreas.value = []
-    }
 
-    if (resultBureauNumber !== bureauNumber.value) {
-      currentGameFlashed.value = false
-      winningAudioPlayed.value = false // 🔧 重置音效状态
-    }
+      if (flashIds.length > 0) {
+        setFlashEffect(flashIds, betTargetList)
+      }
 
-    if (currentGameFlashed.value) {
+    }else{
+      // 不闪烁 
       console.log('⚠️ 当前局已经处理过开牌结果，跳过重复处理')
-      return {
-        type: 'game_result',
-        processed: false,
-        reason: 'already_processed_this_round'
-      }
-    }
-
-    // ================================
-    // 清理投注区域筹码显示（保持不变）
-    // ================================
-    
-    console.log('🧹 开牌结果到达，开始清理投注区域筹码显示')
-    
-    if (betTargetList && Array.isArray(betTargetList) && betTargetList.length > 0) {
-      let clearedAreasCount = 0
-      let totalClearedAmount = 0
-      
-      betTargetList.forEach((item, index) => {
-        if (item && (item.betAmount > 0 || item.showChip.length > 0)) {
-          totalClearedAmount += item.betAmount || 0
-          clearedAreasCount++
-          
-          item.betAmount = 0
-          item.showChip = []
-        }
-      })
-      
-      console.log(`✅ 筹码清理完成:`, {
-        clearedAreas: clearedAreasCount,
-        totalClearedAmount: totalClearedAmount,
-        totalAreas: betTargetList.length
-      })
-    } else {
-      console.warn('⚠️ 投注区域列表无效，跳过筹码清理')
-    }
-
-    // ================================
-    // 🔧 修复：播放开牌音效（不包含中奖音效）
-    // ================================
-    
-    if (audioManager.value) {
-      console.log('🎵 播放开牌音效序列（不包含中奖音效）')
-      
-      // 🔧 关键修复：传递 resultData 但指示不播放中奖音效
-      // 因为中奖音效由 handleMoneyShow 专门处理
-      const audioParams = {
-        resultInfo: { ...resultData, money: 0 }, // 🔧 强制设置为0，防止重复播放中奖音效
-        gameType,
-        bureauNumber: resultBureauNumber
-      }
-      
-      safePlayAudio(audioManager.value.playOpenCardSequence, audioParams.resultInfo, audioParams.gameType, audioParams.bureauNumber)
     }
 
     // ================================
     // 设置获胜区域闪烁效果（保持不变）
     // ================================
-    
-    if (flashIds.length > 0) {
-      setFlashEffect(flashIds, betTargetList)
-    }
 
     return {
       type: 'game_result',
@@ -401,46 +386,36 @@ export function useGameState() {
    * 🔧 修复：处理中奖金额显示（唯一的中奖音效触发点）
    */
   const handleMoneyShow = (gameResult) => {
-    console.log('💰 处理中奖金额显示')
+    console.log('🎯 收到开牌结果:中奖金额 + 音效播放')
     
     if (!gameResult || !gameResult.data || !gameResult.data.result_info) {
       console.warn('⚠️ 中奖金额数据无效')
-      return null
-    }
+    }else{
+      const resultData = gameResult.data.result_info
+      const resultBureauNumber = gameResult.data.bureau_number
+      const showMoney = resultData.money
 
-    const resultData = gameResult.data.result_info
-    const resultBureauNumber = gameResult.data.bureau_number
-    const showMoney = resultData.money
+      console.log('💰 检查中奖金额:', {
+        amount: showMoney,
+        bureauNumber: resultBureauNumber,
+        winningAudioPlayed: winningAudioPlayed.value
+      })
 
-    console.log('💰 检查中奖金额:', {
-      amount: showMoney,
-      bureauNumber: resultBureauNumber,
-      winningAudioPlayed: winningAudioPlayed.value
-    })
-
-    // 检查中奖金额
-    if (showMoney && showMoney > 0) {
-      console.log('🎉 玩家中奖！金额:', showMoney)
-      
-      // 🔧 关键修复：这是唯一播放中奖音效的地方
-      const displaySuccess = showWinningDisplay(showMoney, resultBureauNumber)
-      
-      if (displaySuccess) {
-        console.log('✅ 中奖弹窗和音效处理成功')
+      // 检查中奖金额
+      if (showMoney && showMoney > 0) {
+        console.log('🎉 玩家中奖！金额:', showMoney)
+        
+        // 🔧 关键修复：这是唯一播放中奖音效的地方
+        const displaySuccess = showWinningDisplay(showMoney, resultBureauNumber)
+        
+        if (displaySuccess) {
+          console.log('✅ 中奖弹窗和音效处理成功')
+        } else {
+          console.log('⚠️ 中奖处理失败')
+        }
       } else {
-        console.log('⚠️ 中奖处理失败')
+        console.log('📝 本局无中奖')
       }
-    } else {
-      console.log('📝 本局无中奖')
-    }
-
-    return {
-      type: 'winning_amount',
-      amount: showMoney,
-      bureauNumber: resultBureauNumber,
-      processed: true,
-      winningPopupShown: showMoney > 0,
-      audioPlayed: winningAudioPlayed.value !== false
     }
   }
 

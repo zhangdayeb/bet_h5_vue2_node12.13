@@ -29,16 +29,6 @@ export function useGameConfig() {
       betAmount: 0, 
       showChip: [], 
       flashClass: ''
-    }, 
-    {
-      id: 2, 
-      label: '闲对', 
-      ratio: '1:11', 
-      value: 'idle-Pair', 
-      className: 'bet-idle-Pair',
-      betAmount: 0, 
-      showChip: [], 
-      flashClass: ''
     },
     {
       id: 7, 
@@ -46,16 +36,6 @@ export function useGameConfig() {
       ratio: '1:8', 
       value: 'peace', 
       className: 'bet-peace',
-      betAmount: 0, 
-      showChip: [], 
-      flashClass: ''
-    },
-    {
-      id: 4, 
-      label: '庄对', 
-      ratio: '1:11', 
-      value: 'zhuang-Pair', 
-      className: 'bet-zhuang-Pair',
       betAmount: 0, 
       showChip: [], 
       flashClass: ''
@@ -81,11 +61,31 @@ export function useGameConfig() {
       flashClass: ''
     },
     {
+      id: 2, 
+      label: '闲对', 
+      ratio: '1:11', 
+      value: 'idle-Pair', 
+      className: 'bet-idle-Pair',
+      betAmount: 0, 
+      showChip: [], 
+      flashClass: ''
+    },
+    {
       id: 3, 
       label: '幸运6', 
       ratio: '1:12/20', 
       value: 'lucky', 
       className: 'bet-lucky',
+      betAmount: 0, 
+      showChip: [], 
+      flashClass: ''
+    },
+    {
+      id: 4, 
+      label: '庄对', 
+      ratio: '1:11', 
+      value: 'zhuang-Pair', 
+      className: 'bet-zhuang-Pair',
       betAmount: 0, 
       showChip: [], 
       flashClass: ''
