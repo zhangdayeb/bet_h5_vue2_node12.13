@@ -215,10 +215,12 @@ export function useGameState() {
     flashingAreas.value = [...flashIds]
 
     if (betTargetList && betTargetList.length > 0) {
-      betTargetList.forEach(item => {
+      betTargetList.forEach((item, index) => {
         if (flashIds.includes(item.id)) {
           item.flashClass = 'bet-win-green-bg'
-          console.log('🎯 设置闪烁:', item.label, item.id)
+          // 强制触发响应式更新
+          betTargetList.splice(index, 1, { ...item })
+          console.log('🎯 设置闪烁:', item.label, item.id,item.flashClass)
         }
       })
     }
@@ -227,6 +229,10 @@ export function useGameState() {
       clearTimeout(flashTimer.value)
       flashTimer.value = null
     }
+    
+    console.log('✨ 设置闪烁效果:设置后的结果', {
+      betTargetList
+    })
     
     flashTimer.value = setTimeout(() => {
       console.log('⏰ 5秒到了，开始清除闪烁 - 局号:', bureauNumber.value)
@@ -242,56 +248,56 @@ export function useGameState() {
   const clearFlashEffect = (betTargetList = null) => {
     console.log('🎯 收到开牌结果:清除闪烁 + 投注区域')
 
-    if (flashTimer.value) {
-      clearTimeout(flashTimer.value)
-      flashTimer.value = null
-    }
+    // if (flashTimer.value) {
+    //   clearTimeout(flashTimer.value)
+    //   flashTimer.value = null
+    // }
 
       // ================================
       // 1 清理闪烁
       // ================================
     console.log('🎯 收到开牌结果:清除闪烁')
-    if (betTargetList && betTargetList.length > 0) {
-      console.log('🎯 收到开牌结果:清除闪烁-开始')
-      flashingAreas.value.forEach(areaId => {
-        const item = betTargetList.find(target => target.id === areaId)
-        if (item) {
-          item.flashClass = ''
-          console.log('🧹 清除闪烁:', item.label, item.id)
-        }
-      })
-    }else{
-      console.log('🎯 收到开牌结果:清除闪烁-无闪烁 跳过')
-    }
-    flashingAreas.value = []
+    // if (betTargetList && betTargetList.length > 0) {
+    //   console.log('🎯 收到开牌结果:清除闪烁-开始')
+    //   flashingAreas.value.forEach(areaId => {
+    //     const item = betTargetList.find(target => target.id === areaId)
+    //     if (item) {
+    //       item.flashClass = ''
+    //       console.log('🧹 清除闪烁:', item.label, item.id)
+    //     }
+    //   })
+    // }else{
+    //   console.log('🎯 收到开牌结果:清除闪烁-无闪烁 跳过')
+    // }
+    // flashingAreas.value = []
 
       // ================================
       // 2 清理投注区域筹码显示
       // ================================
       console.log('🎯 收到开牌结果:清除投注')
-      if (betTargetList && Array.isArray(betTargetList) && betTargetList.length > 0) {
-        console.log('🎯 收到开牌结果:清除投注-开始')
-        let clearedAreasCount = 0
-        let totalClearedAmount = 0
+      // if (betTargetList && Array.isArray(betTargetList) && betTargetList.length > 0) {
+      //   console.log('🎯 收到开牌结果:清除投注-开始')
+      //   let clearedAreasCount = 0
+      //   let totalClearedAmount = 0
         
-        betTargetList.forEach((item, index) => {
-          if (item && (item.betAmount > 0 || item.showChip.length > 0)) {
-            totalClearedAmount += item.betAmount || 0
-            clearedAreasCount++
+      //   betTargetList.forEach((item, index) => {
+      //     if (item && (item.betAmount > 0 || item.showChip.length > 0)) {
+      //       totalClearedAmount += item.betAmount || 0
+      //       clearedAreasCount++
             
-            item.betAmount = 0
-            item.showChip = []
-          }
-        })
+      //       item.betAmount = 0
+      //       item.showChip = []
+      //     }
+      //   })
         
-        console.log(`✅ 筹码清理完成`, {
-          clearedAreas: clearedAreasCount,
-          totalClearedAmount: totalClearedAmount,
-          totalAreas: betTargetList.length
-        })
-      } else {
-        console.log('🎯 收到开牌结果:清除投注-投注区域列表无效，跳过筹码清理')
-      }
+      //   console.log(`✅ 筹码清理完成`, {
+      //     clearedAreas: clearedAreasCount,
+      //     totalClearedAmount: totalClearedAmount,
+      //     totalAreas: betTargetList.length
+      //   })
+      // } else {
+      //   console.log('🎯 收到开牌结果:清除投注-投注区域列表无效，跳过筹码清理')
+      // }
 
     
   }
@@ -332,7 +338,6 @@ export function useGameState() {
     const resultBureauNumber = gameResult.data.bureau_number
 
     console.log('🎯 收到开牌结果:处理闪烁', {
-      betTargetList,
       resultBureauNumber,
       currentBureauNumber: bureauNumber.value,
       flashIds,
