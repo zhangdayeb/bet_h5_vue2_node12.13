@@ -135,7 +135,8 @@ export default {
         showWelcomeMessage()
         
         console.log('✅ 应用初始化完成')
-        
+
+       
       } catch (error) {
         console.error('❌ 应用初始化失败:', error)
         errorHandler.showServerError('游戏初始化失败，请刷新页面重试')
@@ -185,7 +186,7 @@ export default {
         // 调用 gameState 完整处理消息（包含音效、闪烁、倒计时、中奖弹窗）
         const processResult = gameState.processGameMessage(
           result,
-          gameConfig.betTargetList.value,
+          gameConfig,  // ✅ 正确：直接传递 gameConfig（不是 gameConfig.gameConfig）
           gameConfig.gameType.value
         )
         
@@ -499,6 +500,7 @@ const handleCancel = () => {
       await initializeApp()
       // 确保投注区域干净
       gameConfig.clearAllBetAreas()
+
     })
 
     onBeforeUnmount(() => {
