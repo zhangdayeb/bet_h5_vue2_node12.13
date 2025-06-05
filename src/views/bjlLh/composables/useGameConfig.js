@@ -107,8 +107,9 @@ export function useGameConfig() {
     {
       id: 20, 
       label: '龙', 
+      ratio: '1:0.97', 
       value: 'zhuang', 
-      className: 'bet-idle',
+      className: 'bet-zhuang',
       betAmount: 0, 
       showChip: [], 
       flashClass: ''
@@ -116,6 +117,7 @@ export function useGameConfig() {
     {
       id: 22, 
       label: '和', 
+      ratio: '1:8', 
       value: 'peace', 
       className: 'bet-peace',
       betAmount: 0, 
@@ -125,6 +127,7 @@ export function useGameConfig() {
     {
       id: 21, 
       label: '虎', 
+      ratio: '1:0.97', 
       value: 'idle', 
       className: 'bet-idle',
       betAmount: 0, 

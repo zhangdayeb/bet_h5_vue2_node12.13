@@ -95,24 +95,27 @@
             </div>
             
             <!-- 龙虎投注区域 -->
+            <!-- 在 bjlLh.vue 中，将原来的龙虎投注区域替换为以下代码 -->
+
+            <!-- 龙虎投注区域 - 修改为与百家乐一致的结构 -->
             <div class="bet-box" v-if="gameType == 2">
                 <div class="bet-row-longhu">
                     <div 
-                        class="bet-area-longhu" 
-                        :class="[target.className, target.flashClass]" 
+                        :class="[target.className, target.flashClass, 'bet-area']" 
                         v-for="(target, targetIndex) in betTargetList" 
                         :key="'longhu-' + targetIndex" 
                         @click="bet(target)"
                     >
-                        <!-- 龙虎区域内容 -->
-                        <div class="bet-content-longhu">
-                            <div class="bet-image">
-                                <img :src="target.imgUrl" :width="target.imgWidth" alt="龙虎图标">
+                        <!-- 投注区域内容 - 与百家乐相同的结构 -->
+                        <div class="bet-content">
+                            <!-- 名称和赔率 -->
+                            <div class="bet-info">
+                                <span class="bet-label">{{ target.label }}</span>
+                                <span class="bet-ratio">{{ target.ratio }}</span>
                             </div>
-                            <div class="bet-label-longhu">{{ target.label }}</div>
                         </div>
                         
-                        <!-- 筹码显示 - 显示金额 -->
+                        <!-- 筹码显示区域 - 显示金额 -->
                         <div class="bet-chip-container" v-if="target.betAmount > 0">
                             <div 
                                 class="bet-chip-item" 

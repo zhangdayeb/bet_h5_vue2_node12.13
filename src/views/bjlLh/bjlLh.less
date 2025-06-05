@@ -7,7 +7,7 @@
     background-position: center;
     position: relative;
     height: 100vh;
-    min-height: 230px; /* 🆕 添加最小高度 */
+    min-height: 230px;
     width: 100vw;
     overflow: hidden;
     
@@ -241,8 +241,8 @@
    投注区域样式 - 统一背景色 + 弹性布局
    ================================ */
 .bet-box {
-    flex: 1; /* 🆕 让投注区域占用剩余空间 */
-    min-height: 120px; /* 🆕 投注区域最小高度 */
+    flex: 1;
+    min-height: 120px;
     background: linear-gradient(135deg, #1a3c5c 0%, #2d5a87 100%);
     color: white;
     display: flex;
@@ -251,8 +251,8 @@
     
     /* 百家乐投注行 - 统一背景 */
     .bet-row {
-        flex: 1; /* 🆕 每行平分剩余空间 */
-        min-height: 60px; /* 🆕 每行最小高度 */
+        flex: 1;
+        min-height: 60px;
         display: flex;
         border-bottom: 2px solid rgba(255, 255, 255, 0.1);
         
@@ -266,18 +266,20 @@
         }
     }
     
-    /* 龙虎投注行 */
+    /* 龙虎投注行 - 修改为使用统一样式 */
     .bet-row-longhu {
         height: 100%;
-        min-height: 120px; /* 🆕 龙虎最小高度 */
+        min-height: 120px;
         display: flex;
         justify-content: space-between;
         align-items: stretch;
+        gap: 8px;
+        padding: 4px;
     }
 }
 
 /* ================================
-   投注区域通用样式
+   投注区域通用样式 - 百家乐和龙虎都使用
    ================================ */
 .bet-area {
     flex: 1;
@@ -289,7 +291,7 @@
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(5px);
-    min-height: 50px; /* 🆕 投注区域最小高度 */
+    min-height: 50px;
     
     &:hover {
         border-color: rgba(255, 255, 255, 0.4);
@@ -320,7 +322,7 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 5px; /* 🔧 从10px改为5px */
+        padding: 5px;
         
         .bet-info {
             text-align: center;
@@ -329,12 +331,12 @@
                 display: block;
                 font-size: 18px;
                 font-weight: bold;
-                margin-bottom: 2px; /* 🔧 从4px改为2px */
+                margin-bottom: 2px;
             }
             
             .bet-ratio {
                 display: block;
-                font-size: 11px; /* 🔧 从12px改为11px */
+                font-size: 11px;
                 opacity: 0.8;
                 color: #ffd700;
             }
@@ -355,45 +357,16 @@
     }
 }
 
-/* 龙虎特殊样式 */
-.bet-area-longhu {
-    flex: 1;
-    position: relative;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    margin: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(5px);
+/* 龙虎区域特殊调整 */
+.bet-row-longhu .bet-area {
+    min-height: 110px;
     
-    &:hover {
-        border-color: rgba(255, 255, 255, 0.4);
-        background: rgba(255, 255, 255, 0.1);
-        transform: translateY(-2px);
-    }
-    
-    &:active {
-        transform: translateY(0);
-        background: rgba(255, 255, 255, 0.15);
-    }
-    
-    .bet-content-longhu {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 8px; /* 🔧 从15px改为8px */
+    .bet-content {
+        padding: 8px;
         
-        .bet-image {
-            margin-bottom: 10px;
-        }
-        
-        .bet-label-longhu {
-            font-size: 16px;
-            font-weight: bold;
-            color: #ffd700;
+        .bet-info .bet-label {
+            font-size: 20px; /* 龙虎文字稍大一些 */
+            margin-bottom: 4px;
         }
     }
 }
@@ -420,7 +393,7 @@
     /* 将总金额显示在筹码上方 */
     .bet-total-amount {
         position: absolute;
-        top: -30px; /* 改为负值，显示在筹码上方 */
+        top: -30px;
         left: 50%;
         transform: translateX(-50%);
         background: rgba(255, 215, 0, 0.95);
@@ -434,7 +407,7 @@
         border: 2px solid #daa520;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
         white-space: nowrap;
-        z-index: 1000; /* 确保在最上层 */
+        z-index: 1000;
         
         /* 添加小箭头指向筹码 */
         &::after {
@@ -453,7 +426,7 @@
 }
 
 /* ================================
-   特殊颜色样式
+   特殊颜色样式 - 百家乐和龙虎通用
    ================================ */
 .bet-idle {
     .bet-content .bet-label {
@@ -507,35 +480,35 @@
 }
 
 /* ================================
-   控制面板样式 - 🆕 压缩版本
+   控制面板样式 - 压缩版本
    ================================ */
 .bet-control-panel {
     background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-    padding: 10px 15px; /* 🔧 从20px 15px改为10px 15px */
+    padding: 10px 15px;
     border-top: 2px solid rgba(255, 255, 255, 0.1);
-    min-height: 80px; /* 🔧 从140px改为80px */
-    flex-shrink: 0; /* 🆕 控制面板不缩小 */
+    min-height: 80px;
+    flex-shrink: 0;
     
     /* 筹码选择区域 */
     .chip-selection-area {
-        margin-bottom: 15px; /* 🔧 从25px改为15px */
+        margin-bottom: 15px;
         
         .chip-list {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px; /* 🔧 从15px改为10px */
+            gap: 10px;
             flex-wrap: wrap;
-            padding: 5px 0; /* 🔧 从10px 0改为5px 0 */
+            padding: 5px 0;
             
             .chip-item {
                 position: relative;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                margin: 2px; /* 🔧 从5px改为2px */
+                margin: 2px;
                 
                 &.active {
-                    transform: scale(1.1); /* 🔧 从scale(1.15)改为scale(1.1) */
+                    transform: scale(1.1);
                     
                     img {
                         filter: drop-shadow(0 0 15px #ffd700);
@@ -543,27 +516,27 @@
                 }
                 
                 &:hover {
-                    transform: scale(1.05); /* 🔧 从scale(1.08)改为scale(1.05) */
+                    transform: scale(1.05);
                 }
                 
                 img {
-                    width: 40px; /* 🔧 从50px改为40px */
-                    height: 40px; /* 🔧 从50px改为40px */
+                    width: 40px;
+                    height: 40px;
                     border-radius: 50%;
                     transition: filter 0.3s ease;
                     border: 2px solid transparent;
                 }
                 
                 .chip-value {
-                    display: none; /* 🆕 隐藏筹码下方文字 */
+                    display: none;
                 }
                 
                 .chip-mask {
                     position: absolute;
                     top: 0;
                     left: 0;
-                    width: 40px; /* 🔧 从50px改为40px */
-                    height: 40px; /* 🔧 从50px改为40px */
+                    width: 40px;
+                    height: 40px;
                     background: rgba(0, 0, 0, 0.6);
                     border-radius: 50%;
                     transition: opacity 0.3s ease;
@@ -589,7 +562,7 @@
     .action-buttons-area {
         display: flex;
         justify-content: center;
-        padding: 5px 0; /* 🔧 从10px 0改为5px 0 */
+        padding: 5px 0;
     }
     
     /* 隐藏游戏信息区域 */
@@ -645,22 +618,22 @@
 }
 
 /* ================================
-   响应式设计 - 🆕 优化移动端体验
+   响应式设计 - 优化移动端体验
    ================================ */
 @media (max-width: 768px) {
     .bet-control-panel {
-        padding: 8px 10px; /* 🔧 进一步压缩 */
-        min-height: 70px; /* 🔧 更小的高度 */
+        padding: 8px 10px;
+        min-height: 70px;
         
         .chip-selection-area .chip-list {
-            gap: 8px; /* 🔧 更小的间距 */
+            gap: 8px;
             padding: 3px 0;
             
             .chip-item {
                 margin: 1px;
                 
                 img {
-                    width: 35px; /* 🔧 更小的筹码 */
+                    width: 35px;
                     height: 35px;
                 }
                 
@@ -678,6 +651,10 @@
     
     .bet-area .bet-content .bet-info .bet-label {
         font-size: 16px;
+    }
+    
+    .bet-row-longhu .bet-area .bet-content .bet-info .bet-label {
+        font-size: 18px;
     }
     
     .network-status {
@@ -706,14 +683,14 @@
 @media (max-width: 480px) {
     .bet-control-panel {
         padding: 6px 8px;
-        min-height: 65px; /* 🔧 最小高度 */
+        min-height: 65px;
         
         .chip-selection-area .chip-list {
             gap: 6px;
             
             .chip-item {
                 img {
-                    width: 32px; /* 🔧 最小筹码尺寸 */
+                    width: 32px;
                     height: 32px;
                 }
                 
@@ -726,7 +703,7 @@
     }
     
     .bet-area .bet-content {
-        padding: 3px; /* 🔧 最小内边距 */
+        padding: 3px;
         
         .bet-info .bet-label {
             font-size: 14px;
@@ -734,6 +711,25 @@
         
         .bet-ratio {
             font-size: 10px;
+        }
+    }
+    
+    .bet-row-longhu {
+        min-height: 100px;
+        gap: 6px;
+        padding: 3px;
+        
+        .bet-area {
+            min-height: 90px;
+            
+            .bet-content {
+                padding: 6px;
+                
+                .bet-info .bet-label {
+                    font-size: 16px;
+                    margin-bottom: 2px;
+                }
+            }
         }
     }
     
@@ -771,7 +767,7 @@
 @media (min-width: 1024px) {
     .bet-control-panel {
         padding: 12px 20px;
-        min-height: 90px; /* 🔧 大屏幕稍微增加高度 */
+        min-height: 90px;
         
         .chip-selection-area .chip-list {
             gap: 12px;
@@ -781,7 +777,7 @@
                 margin: 3px;
                 
                 img {
-                    width: 45px; /* 🔧 大屏幕适中尺寸 */
+                    width: 45px;
                     height: 45px;
                 }
                 
@@ -794,6 +790,20 @@
         
         .action-buttons-area {
             padding: 8px 0;
+        }
+    }
+    
+    .bet-row-longhu {
+        min-height: 140px;
+        gap: 10px;
+        padding: 6px;
+        
+        .bet-area {
+            min-height: 125px;
+            
+            .bet-content .bet-info .bet-label {
+                font-size: 22px;
+            }
         }
     }
     
@@ -814,15 +824,15 @@
 }
 
 /* ================================
-   🆕 高度自适应优化
+   高度自适应优化
    ================================ */
 @media (max-height: 400px) {
     .bet {
-        min-height: 230px; /* 保持最小高度 */
+        min-height: 230px;
     }
     
     .bet-control-panel {
-        min-height: 60px; /* 极小屏幕高度 */
+        min-height: 60px;
         padding: 5px 8px;
         
         .chip-selection-area {
@@ -845,13 +855,21 @@
         .bet-row {
             min-height: 50px;
         }
+        
+        .bet-row-longhu {
+            min-height: 85px;
+        }
+    }
+    
+    .bet-area {
+        min-height: 45px;
     }
 }
 
 @media (min-height: 600px) {
     .bet-box {
         .bet-row {
-            min-height: 80px; /* 增加行高 */
+            min-height: 80px;
         }
         
         .bet-row-longhu {
