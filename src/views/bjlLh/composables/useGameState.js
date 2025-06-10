@@ -15,6 +15,8 @@ export function useGameState() {
   const tableRunInfo = ref({})  
   // 当前局号
   const bureauNumber = ref('')
+  // 上次倒计时状态
+  const previousEndTime = ref(0)
 
   // 闪烁控制相关状态
   const flashingAreas = ref([])
@@ -61,9 +63,6 @@ export function useGameState() {
   const registerCleanupCallback = (callback) => {
     if (typeof callback === 'function') {
       cleanupCallbacks.value.push(callback)
-      console.log('📋 已注册清理回调函数，当前回调数量:', cleanupCallbacks.value.length)
-    } else {
-      console.warn('⚠️ 注册的回调不是函数类型')
     }
   }
 
@@ -72,12 +71,9 @@ export function useGameState() {
    * @param {Array} betTargetList - 投注区域列表
    */
   const executeCleanupCallbacks = (betTargetList) => {
-    console.log('🎯 执行清理回调，回调数量:', cleanupCallbacks.value.length)
-    
     cleanupCallbacks.value.forEach((callback, index) => {
       try {
         callback(betTargetList)
-        console.log(`✅ 清理回调 ${index + 1} 执行成功`)
       } catch (error) {
         console.error(`❌ 清理回调 ${index + 1} 执行失败:`, error)
       }
@@ -90,20 +86,15 @@ export function useGameState() {
    */
   const scheduleResultCleanup = (gameConfig) => {
     if (!gameConfig) {
-      console.warn('⚠️ gameConfig未传入，无法调度清理')
       return
     }
     
-    console.log('⏰ 调度开牌结果后清理：5秒后执行')
-    
     setTimeout(() => {
-      console.log('🎯 执行开牌结果后自动清理')
       executeCleanupCallbacks(gameConfig.betTargetList.value)
       
       // 标记本局已清理
       if (currentRoundProcessed.value.bureauNumber === bureauNumber.value) {
         currentRoundProcessed.value.cleared = true
-        console.log('📝 标记本局已清理')
       }
       
     }, 5000) // 5秒后清理，给用户足够时间看结果
@@ -118,7 +109,6 @@ export function useGameState() {
    */
   const setAudioManager = (audio) => {
     audioManager.value = audio
-    console.log('🎵 音频管理器已注入')
   }
 
   /**
@@ -147,32 +137,22 @@ export function useGameState() {
    * @returns {boolean} 是否播放成功
    */
   const playWinningAudioSafely = (amount, roundId = '') => {
-    console.log('🎯 播放中奖音效')
     // 检查是否已经播放过本局的中奖音效
     const currentRoundKey = `${roundId}_${amount}`
     
     if (winningAudioPlayed.value === currentRoundKey) {
-      console.log('🔇 本局中奖音效已播放，防止重复播放')
       return false
     }
 
     // 验证音频管理器和金额
     if (!audioManager.value) {
-      console.warn('⚠️ 音频管理器未初始化')
       return false
     }
 
     const winAmount = Number(amount)
     if (!winAmount || winAmount <= 0) {
-      console.log('💰 中奖金额无效，不播放中奖音效')
       return false
     }
-
-    console.log('🎉 播放中奖音效序列:', {
-      amount: winAmount,
-      roundId,
-      audioManager: !!audioManager.value
-    })
 
     // 根据金额播放不同的中奖音效
     let audioSuccess = false
@@ -180,19 +160,15 @@ export function useGameState() {
     try {
       if (audioManager.value.playWinSoundByAmount) {
         audioSuccess = audioManager.value.playWinSoundByAmount(winAmount)
-        console.log('🎵 中奖音效序列播放结果:', audioSuccess)
       } else if (audioManager.value.playWinningSound) {
         audioSuccess = audioManager.value.playWinningSound('betsuccess.mp3')
-        console.log('🎵 单个中奖音效播放结果:', audioSuccess)
       } else {
-        console.warn('⚠️ 中奖音效播放方法不存在')
         return false
       }
 
       // 标记本局中奖音效已播放
       if (audioSuccess) {
         winningAudioPlayed.value = currentRoundKey
-        console.log('✅ 中奖音效播放成功，已标记防重复')
       }
 
       return audioSuccess
@@ -211,19 +187,11 @@ export function useGameState() {
    * 显示中奖弹窗
    */
   const showWinningDisplay = (amount, roundId = '') => {
-    console.log('🎯 显示中奖弹窗')
     // 验证中奖金额
     const winAmount = Number(amount)
     if (!winAmount || winAmount <= 0) {
-      console.log('💰 中奖金额无效或为0，不显示弹窗:', amount)
       return false
     }
-
-    console.log('🎉 显示中奖弹窗:', {
-      amount: winAmount,
-      roundId,
-      previousAudioStatus: winningAudioPlayed.value
-    })
 
     // 设置中奖数据
     winningAmount.value = winAmount
@@ -239,7 +207,6 @@ export function useGameState() {
    * 关闭中奖弹窗
    */
   const closeWinningDisplay = () => {
-    console.log('🎉 关闭中奖弹窗')
     showWinningPopup.value = false
     winningAmount.value = 0
   }
@@ -248,11 +215,8 @@ export function useGameState() {
    * 播放中奖音效（供弹窗组件调用）
    */
   const playWinningSound = () => {
-    console.log('🎵 弹窗组件请求播放中奖音效')
-    
     // 检查是否已经播放过
     if (winningAudioPlayed.value) {
-      console.log('🔇 中奖音效已播放过，弹窗音效请求被忽略')
       return false
     }
 
@@ -268,15 +232,11 @@ export function useGameState() {
    * 设置闪烁效果
    */
   const setFlashEffect = (flashIds = [], gameConfig = null) => {
-    console.log('✨ 设置闪烁效果:', flashIds, '当前局号:', bureauNumber.value)
-    
     if (!flashIds || flashIds.length === 0) {
-      console.log('📝 无闪烁区域')
       return false
     }
 
     if (!gameConfig) {
-      console.warn('⚠️ gameConfig未传入，无法设置闪烁')
       return false
     }
 
@@ -289,23 +249,11 @@ export function useGameState() {
       : gameConfig.betTargetListLongHu.value
 
     if (targetList && targetList.length > 0) {
-      let matchedCount = 0
-      
       targetList.forEach((item) => {
         if (flashIds.includes(item.id)) {
-          matchedCount++
           item.flashClass = 'bet-win-green-bg'
-          console.log('✅ 设置闪烁:', item.label, item.id)
         }
       })
-      
-      console.log(`✨ 闪烁设置完成，匹配 ${matchedCount} 个区域`)
-      
-      if (matchedCount === 0) {
-        console.error('❌ 没有任何区域匹配到闪烁ID!')
-      }
-    } else {
-      console.warn('⚠️ 目标列表为空或无效')
     }
 
     // 设置清理定时器 - 5秒后清除闪烁
@@ -314,10 +262,7 @@ export function useGameState() {
       flashTimer.value = null
     }
     
-    console.log('⏰ 设置闪烁定时器：5秒后清除')
-    
     flashTimer.value = setTimeout(() => {
-      console.log('⏰ 5秒到了，开始清除闪烁效果')
       clearFlashEffect(gameConfig)
     }, 5000)
 
@@ -328,10 +273,7 @@ export function useGameState() {
    * 清除闪烁效果
    */
   const clearFlashEffect = (gameConfig = null) => {
-    console.log('🧹 清除闪烁效果')
-    
     if (!gameConfig) {
-      console.warn('⚠️ gameConfig未传入清除函数')
       return
     }
 
@@ -341,20 +283,11 @@ export function useGameState() {
       : gameConfig.betTargetListLongHu.value
 
     if (targetList && targetList.length > 0) {
-      let clearedFlashCount = 0
-
       targetList.forEach((item) => {
         // 只清除闪烁效果，不清除投注数据
         if (flashingAreas.value.includes(item.id) && item.flashClass) {
           item.flashClass = ''
-          clearedFlashCount++
-          console.log('🧹 清除闪烁:', item.label, item.id)
         }
-      })
-
-      console.log('✅ 闪烁清理完成:', {
-        clearedFlash: clearedFlashCount,
-        bureauNumber: bureauNumber.value
       })
     }
 
@@ -377,8 +310,24 @@ export function useGameState() {
    */
   const handleTableInfo = (tableInfo) => {
     const newTableInfo = tableInfo.data.table_run_info
-    console.log('📊 桌台信息更新，倒计时:', newTableInfo.end_time)
-
+    
+    // 检测倒计时状态变化并播放对应音效
+    const currentEndTime = newTableInfo.end_time
+    
+    if (previousEndTime.value === 0 && currentEndTime > 0) {
+      // 倒计时开始 - 播放下注开始音效
+      if (audioManager.value && audioManager.value.playStartBetSound) {
+        audioManager.value.playStartBetSound()
+      }
+    } else if (previousEndTime.value > 0 && currentEndTime === 0) {
+      // 倒计时结束 - 播放下注停止音效
+      if (audioManager.value && audioManager.value.playStopBetSound) {
+        audioManager.value.playStopBetSound()
+      }
+    }
+    
+    // 更新状态
+    previousEndTime.value = currentEndTime
     tableRunInfo.value = newTableInfo
 
     return {
@@ -396,7 +345,6 @@ export function useGameState() {
    */
   const handleGameResult = (gameResult, gameConfig = null, gameType = null) => {
     if (!gameResult || !gameResult.data || !gameResult.data.result_info) {
-      console.warn('⚠️ 开牌结果数据无效')
       return null
     }
 
@@ -405,19 +353,10 @@ export function useGameState() {
     const resultBureauNumber = gameResult.data.bureau_number
     const winningAmount = resultData.money || 0
 
-    console.log('🎯 收到开牌结果消息:', {
-      bureauNumber: resultBureauNumber,
-      currentBureau: bureauNumber.value,
-      flashIds,
-      winningAmount
-    })
-
     // 检查是否是新的一局
     const isNewRound = bureauNumber.value !== resultBureauNumber
     
     if (isNewRound) {
-      console.log('🆕 新的一局开始:', resultBureauNumber)
-      
       // 重置局状态
       bureauNumber.value = resultBureauNumber
       currentGameFlashed.value = false
@@ -430,38 +369,25 @@ export function useGameState() {
         winningShown: false,
         cleared: false
       }
-      
-      console.log('🔄 重置本局处理状态')
     }
 
     // 只在第一次收到本局消息时设置闪烁
     if (!currentRoundProcessed.value.flashSet && flashIds.length > 0) {
-      console.log('✨ 第一次处理本局，设置闪烁效果')
       setFlashEffect(flashIds, gameConfig)
       currentRoundProcessed.value.flashSet = true
-    } else if (currentRoundProcessed.value.flashSet && flashIds.length > 0) {
-      console.log('⚠️ 本局闪烁已设置，跳过重复设置')
     }
 
     // 每次都检查中奖信息
     if (winningAmount > 0 && !currentRoundProcessed.value.winningShown) {
-      console.log('🎉 发现中奖信息！金额:', winningAmount)
-      
       const displaySuccess = showWinningDisplay(winningAmount, resultBureauNumber)
       
       if (displaySuccess) {
         currentRoundProcessed.value.winningShown = true
-        console.log('✅ 中奖弹窗和音效处理成功，标记已处理')
       }
-    } else if (winningAmount > 0 && currentRoundProcessed.value.winningShown) {
-      console.log('⚠️ 本局中奖已处理，跳过重复显示')
-    } else if (winningAmount <= 0) {
-      console.log('📝 本次消息无中奖信息')
     }
 
     // 🆕 关键修复：调度开牌结果后的清理工作
     if (flashIds.length > 0 && !currentRoundProcessed.value.cleared) {
-      console.log('🎯 调度开牌结果后的清理工作')
       scheduleResultCleanup(gameConfig)
     }
 
@@ -481,8 +407,6 @@ export function useGameState() {
    * 处理中奖金额显示（兼容性保留）
    */
   const handleMoneyShow = (gameResult) => {
-    console.log('🎯 handleMoneyShow 被调用（兼容性保留）')
-    
     if (!gameResult || !gameResult.data || !gameResult.data.result_info) {
       return
     }
@@ -491,7 +415,7 @@ export function useGameState() {
     const showMoney = resultData.money
 
     if (showMoney && showMoney > 0) {
-      console.log('💰 handleMoneyShow 检测到中奖:', showMoney, '但处理已在 handleGameResult 中完成')
+      // 处理已在 handleGameResult 中完成
     }
   }
 
@@ -514,8 +438,6 @@ export function useGameState() {
 
     // 开牌结果消息 - 统一处理闪烁、中奖和清理调度
     if (messageResult.data && messageResult.data.result_info) {    
-      console.log('📨 处理开牌结果消息')
-      
       // 🔧 修复：在 handleGameResult 中统一处理闪烁、中奖和清理调度
       const gameResultInfo = handleGameResult(messageResult, gameConfig, gameType)
       
@@ -536,8 +458,6 @@ export function useGameState() {
    * 清理所有资源
    */
   const cleanup = () => {
-    console.log('🧹 清理游戏状态资源')
-    
     if (flashTimer.value) {
       clearTimeout(flashTimer.value)
       flashTimer.value = null
@@ -549,6 +469,7 @@ export function useGameState() {
     winningAudioPlayed.value = false
     bureauNumber.value = ''
     tableRunInfo.value = {}
+    previousEndTime.value = 0
     
     // 重置多消息处理状态
     currentRoundProcessed.value = {
@@ -566,11 +487,10 @@ export function useGameState() {
    * 新局重置
    */
   const resetForNewRound = () => {
-    console.log('🆕 新局重置游戏状态')
-    
     currentGameFlashed.value = false
     flashingAreas.value = []
     winningAudioPlayed.value = false
+    previousEndTime.value = 0
     
     if (flashTimer.value) {
       clearTimeout(flashTimer.value)
