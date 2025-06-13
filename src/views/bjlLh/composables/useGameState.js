@@ -239,6 +239,15 @@ export function useGameState() {
     if (!gameConfig) {
       return false
     }
+    
+    // 🆕 关键新增：播放开牌音效序列
+    console.log('🎵 触发开牌音效序列播放')
+    if (audioManager.value && audioManager.value.playOpenCardSequence) {
+      audioManager.value.playOpenCardSequence(flashIds)
+    } else {
+      console.warn('⚠️ 音频管理器未初始化或缺少开牌音效方法')
+    }
+
 
     currentGameFlashed.value = true
     flashingAreas.value = [...flashIds]

@@ -123,33 +123,95 @@ export function useAudio() {
   }
 
   /**
-   * 🔧 关键修复：播放开牌音效序列（彻底避免与中奖音效冲突）
+   * 播放开牌音效序列（基于pai_flash数组）
+   * @param {Array} flashArray - pai_flash数组，如 [8] 或 [2,6,8]
+   * @param {Object} resultInfo - 可选的结果信息，用于日志记录
    */
-  const playOpenCardSequence = (resultInfo, gameType, bureauNumber) => {
-    console.log('🎵 播放开牌音效序列')
+  const playOpenCardSequence = (flashArray, resultInfo = null) => {
+    console.log('🎵 播放开牌音效序列', { flashArray, resultInfo })
     
-    // 🔧 关键修复：先播放开牌音效
-    playOpenCardSound()
-    
-    // 🔧 关键修复：检查是否有中奖金额
-    const hasWinning = resultInfo && resultInfo.money && resultInfo.money > 0
-    
-    if (hasWinning) {
-      console.log('🎉 检测到中奖金额，开牌音效序列将不播放结果音效')
-      console.log('💰 中奖音效将由 useGameState 统一管理')
-      
-      // 🔧 关键修复：不再播放中奖音效，交给 useGameState 处理
-      // 这里只播放开牌音效，不播放任何中奖相关音效
-      
-    } else {
-      // 🔧 无中奖时延迟播放结果音效
-      setTimeout(() => {
-        if (resultInfo.result && resultInfo.result.win) {
-          console.log('📝 无中奖，播放普通结果音效')
-          playResultSound(resultInfo.result.win, gameType)
-        }
-      }, 1000)
+    if (!audioInitialized.value) {
+      console.warn('⚠️ 音频系统未初始化，无法播放开牌音效')
+      return false
     }
+
+    if (!flashArray || !Array.isArray(flashArray) || flashArray.length === 0) {
+      console.warn('⚠️ flashArray无效或为空，跳过开牌音效')
+      return false
+    }
+
+    // 构建音效播放序列
+    const audioSequence = ['open/kai.mp3'] // 始终先播放开牌基础音效
+    
+    // 添加对应的数字音效
+    flashArray.forEach(num => {
+      if (num && typeof num === 'number') {
+        audioSequence.push(`open/${num}.mp3`)
+      }
+    })
+
+    console.log('🎵 开牌音效序列:', audioSequence)
+
+    // 播放音效序列
+    playAudioSequence(audioSequence)
+    
+    return true
+  }
+
+  /**
+   * 按顺序播放音效序列
+   * @param {Array} audioSequence - 音效文件名数组
+   */
+  const playAudioSequence = (audioSequence) => {
+    if (!audioSequence || audioSequence.length === 0) {
+      return
+    }
+
+    let currentIndex = 0
+    
+    const playNext = () => {
+      if (currentIndex >= audioSequence.length) {
+        console.log('✅ 开牌音效序列播放完成')
+        return
+      }
+
+      const audioName = audioSequence[currentIndex]
+      console.log(`🔊 播放开牌音效 [${currentIndex + 1}/${audioSequence.length}]:`, audioName)
+      
+      // 使用现有的音效播放方法，但需要处理 open/ 路径
+      playOpenSoundEffect(audioName)
+      
+      currentIndex++
+      
+      // 间隔500ms播放下一个音效
+      if (currentIndex < audioSequence.length) {
+        setTimeout(playNext, 500)
+      }
+    }
+
+    // 开始播放序列
+    playNext()
+  }
+
+  /**
+   * 播放开牌专用音效（处理open/路径）
+   * @param {string} audioName - 音效文件名，如 'open/kai.mp3' 或 'open/8.mp3'
+   */
+  const playOpenSoundEffect = (audioName) => {
+    if (!audioInitialized.value) {
+      console.warn('⚠️ 音频系统未初始化，无法播放开牌音效:', audioName)
+      return false
+    }
+
+    if (!audioName) {
+      console.warn('⚠️ 开牌音效文件名为空')
+      return false
+    }
+
+    console.log('🔊 播放开牌音效:', audioName)
+    
+    // 直接调用audioHandle的startSoundEffect，传入包含open/路径的文件名
+    return audioHandle.value.startSoundEffect(audioName)
   }
 
   // ================================
@@ -489,8 +551,13 @@ export function useAudio() {
         break
         
       case 'card_opening':
-        // 🔧 关键修复：使用修复后的开牌音效序列
-        playOpenCardSequence(params.resultInfo, params.gameType, params.bureauNumber)
+        // 🔧 修改：使用新的参数格式
+        // 从 params 中提取 flashArray 和 resultInfo
+        const flashArray = params.flashArray || params.pai_flash || []
+        const resultInfo = params.resultInfo || null
+        
+        console.log('🎵 调用开牌音效序列:', { flashArray, resultInfo })
+        playOpenCardSequence(flashArray, resultInfo)
         break
         
       case 'welcome_sequence':
@@ -621,6 +688,10 @@ export function useAudio() {
     // 🔧 修复：游戏结果音效
     playResultSound,
     playOpenCardSequence, // 🔧 已修复，不再包含中奖音效
+
+    // 🆕 新增：开牌专用音效方法
+    playOpenSoundEffect,
+    playAudioSequence,
     
     // 背景音乐控制
     startBackgroundMusic,
